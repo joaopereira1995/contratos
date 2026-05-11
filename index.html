@@ -393,7 +393,7 @@ function DashboardPage({ data, grandMonthly, catMonthly, dashCat, dashSub, onGoT
 
   return (
     <div className="bottom-pad" style={{ padding:"32px 40px" }}>
-      <div className="dash-cards" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", , gap:12, marginBottom:32 }}>
+      <div className="dash-cards" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:32 }}>
         {summaryCards.map(card => (
           <div key={card.id} onClick={() => setDrilldown(drilldown===card.id ? null : card.id)}
             style={{ background: drilldown===card.id ? "#1e1e2a" : SURFACE, border:`1px solid ${drilldown===card.id ? "#4a4a6a" : BORDER}`, borderRadius:10, padding:"16px 20px", cursor:"pointer", transition:"all .15s" }}
@@ -1073,7 +1073,7 @@ function App() {
           </div>
 
           {/* Contract info */}
-          <div className="info-grid" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", , gap:10, marginBottom:20 }}>
+          <div className="info-grid" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:20 }}>
             <InfoChip label="Nº Contrato" value={viewSub.contractRef} />
             <InfoChip label="Adesão" value={viewSub.joinDate} />
             <InfoChip label="Renovação" value={viewSub.renewalDate} />
