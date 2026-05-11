@@ -28,7 +28,7 @@
     }
     .gdrive-status { color: #555; font-size: 0.78rem; }
     #sync-indicator {
-      position: fixed; bottom: 16px; right: 16px; z-index: 1000;
+      position: fixed; bottom: 80px; right: 16px; z-index: 1000;
       font-size: 0.7rem; color: #444; font-family: monospace;
       background: #131317; border: 1px solid #1e1e24; border-radius: 6px;
       padding: 4px 10px; opacity: 0; transition: opacity 0.3s;
@@ -309,9 +309,9 @@ function RenewalBadge({ date }) {
 
 function Overlay({ onClose, children, wide }) {
   return (
-    <div onClick={e => e.target === e.currentTarget && onClose()}
+    <div className="mobile-overlay" onClick={e => e.target === e.currentTarget && onClose()}
       style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.82)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:16 }}>
-      <div style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:14, padding:30, width:"100%", maxWidth: wide ? 700 : 520, maxHeight:"92vh", overflowY:"auto" }}>
+      <div className="mobile-full" style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:14, padding:30, width:"100%", maxWidth: wide ? 700 : 520, maxHeight:"92vh", overflowY:"auto" }}>
         {children}
       </div>
     </div>
@@ -392,9 +392,8 @@ function DashboardPage({ data, grandMonthly, catMonthly, dashCat, dashSub, onGoT
   ];
 
   return (
-    <div style={{ padding:"32px 40px" }}>
-      {/* Summary cards */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:32 }}>
+    <div className="bottom-pad" style={{ padding:"32px 40px" }}>
+      <div className="dash-cards" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", , gap:12, marginBottom:32 }}>
         {summaryCards.map(card => (
           <div key={card.id} onClick={() => setDrilldown(drilldown===card.id ? null : card.id)}
             style={{ background: drilldown===card.id ? "#1e1e2a" : SURFACE, border:`1px solid ${drilldown===card.id ? "#4a4a6a" : BORDER}`, borderRadius:10, padding:"16px 20px", cursor:"pointer", transition:"all .15s" }}
@@ -447,7 +446,7 @@ function DashboardPage({ data, grandMonthly, catMonthly, dashCat, dashSub, onGoT
         <div style={{ color:"#444", textAlign:"center", padding:60, fontSize:"0.85rem" }}>Adiciona faturas para ver o dashboard.</div>
       ) : (
         <>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
+          <div className="dash-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
             {[["Por categoria · mensal","mensal"],["Por categoria · anual","anual"]].map(([title,key])=>(
               <div key={key} style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px 24px" }}>
                 <div style={{ fontSize:"0.67rem", color:MUTED, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:14 }}>{title}</div>
@@ -778,10 +777,32 @@ function App() {
         select option{background:#16161a}
         button{cursor:pointer;font-family:'DM Mono',monospace}
         .rh:hover{background:#1a1a1e!important}
+        /* Mobile tab bar */
+        .tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:#0d0d0f;border-top:1px solid #1e1e24;padding-bottom:env(safe-area-inset-bottom)}
+        .tab-bar button{flex:1;background:transparent;border:none;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:0.55rem;letter-spacing:0.04em;color:#555;transition:color .15s}
+        .tab-bar button.active{color:#c8b89a}
+        .tab-bar button svg{width:22px;height:22px;stroke-width:1.5}
+        @media(max-width:768px){
+          .tab-bar{display:flex}
+          .desktop-nav{display:none!important}
+          .desktop-sidebar{display:none!important}
+          .page-content{padding:16px!important}
+          .page-content-contracts{padding:16px!important}
+          .card-grid{grid-template-columns:1fr!important}
+          .dash-grid{grid-template-columns:1fr!important}
+          .dash-cards{grid-template-columns:1fr 1fr!important}
+          .info-grid{grid-template-columns:1fr 1fr!important}
+          .mobile-full{max-width:100%!important;max-height:100%!important;height:100%!important;border-radius:0!important;padding:20px 16px!important}
+          .mobile-overlay{align-items:flex-end!important;padding:0!important}
+          .form-grid{grid-template-columns:1fr!important}
+          .bottom-pad{padding-bottom:80px!important}
+          .cat-header{font-size:1.4rem!important}
+          .stat-sub{font-size:0.65rem!important}
+        }
       `}</style>
 
-      {/* Nav */}
-      <nav style={{ borderBottom:`1px solid ${BORDER}`, padding:"0 32px", display:"flex", alignItems:"center" }}>
+      {/* Desktop Nav */}
+      <nav className="desktop-nav" style={{ borderBottom:`1px solid ${BORDER}`, padding:"0 32px", display:"flex", alignItems:"center" }}>
         <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.25rem", fontWeight:300, paddingRight:28, paddingTop:15, paddingBottom:15, borderRight:`1px solid ${BORDER}`, marginRight:4 }}>
           Contratos
         </div>
@@ -793,15 +814,38 @@ function App() {
           }}>{label}</button>
         ))}
         <div style={{ marginLeft:"auto", fontSize:"0.7rem", color:"#444" }}>
-          {fmt(grandMonthly + (data.subscriptions||[]).reduce((s,sub)=>s+subMonthly(sub),0))}<span style={{ color:"#2a2a2e" }}>/mês</span>
+          {fmt(grandMonthly)}<span style={{ color:"#2a2a2e" }}>/mês</span>
         </div>
       </nav>
+
+      {/* Mobile Header */}
+      <div style={{ display:"none" }} className="mobile-header-placeholder" />
+      <style>{`@media(max-width:768px){.mobile-top-bar{display:flex!important}}`}</style>
+      <div className="mobile-top-bar" style={{ display:"none", borderBottom:`1px solid ${BORDER}`, padding:"12px 16px", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, background:BG, zIndex:100 }}>
+        <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.1rem", fontWeight:300, color:"#e8e4dc" }}>Contratos</div>
+        <div style={{ fontSize:"0.72rem", color:ACCENT }}>{fmt(grandMonthly)}<span style={{ color:"#444" }}>/mês</span></div>
+      </div>
+
+      {/* Mobile Tab Bar */}
+      <div className="tab-bar">
+        {[
+          ["contracts", "Visão Geral", <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>],
+          ["subscriptions", "Subscrições", <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z"/></svg>],
+          ["dashboard", "Dashboard", <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>],
+          ["companies", "Empresas", <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>],
+          ["settings", "Categorias", <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>],
+        ].map(([id, label, icon]) => (
+          <button key={id} className={page===id ? "active" : ""} onClick={() => setPage(id)}>
+            {icon}{label}
+          </button>
+        ))}
+      </div>
 
       {/* ── Contracts page ── */}
       {page === "contracts" && (
         <div style={{ display:"flex", minHeight:"calc(100vh - 52px)" }}>
-          {/* Sidebar */}
-          <aside style={{ width:230, borderRight:`1px solid ${BORDER}`, padding:"16px 0", flexShrink:0 }}>
+          {/* Sidebar - desktop only */}
+          <aside className="desktop-sidebar" style={{ width:230, borderRight:`1px solid ${BORDER}`, padding:"16px 0", flexShrink:0 }}>
             {data.categories.map(cat => (
               <div key={cat.id}>
                 <div onClick={() => { setActiveCatId(cat.id); setActiveSubId(null); }}
@@ -834,20 +878,31 @@ function App() {
           </aside>
 
           {/* Main area */}
-          <main style={{ flex:1, padding:"28px 36px", overflowY:"auto" }}>
+          <main className="bottom-pad" style={{ flex:1, padding:"28px 36px", overflowY:"auto" }}>
+            {/* Mobile: category selector */}
+            <div style={{ display:"none" }} className="mobile-cat-nav-placeholder" />
+            <style>{`@media(max-width:768px){.mobile-cat-select{display:flex!important}}`}</style>
+            <div className="mobile-cat-select" style={{ display:"none", gap:8, overflowX:"auto", paddingBottom:8, marginBottom:16, scrollbarWidth:"none" }}>
+              {data.categories.map(cat => (
+                <button key={cat.id} onClick={() => { setActiveCatId(cat.id); setActiveSubId(null); }}
+                  style={{ flexShrink:0, background: activeCatId===cat.id ? ACCENT : "#131317", color: activeCatId===cat.id ? BG : "#777", border:`1px solid ${activeCatId===cat.id ? ACCENT : BORDER}`, borderRadius:20, padding:"6px 14px", fontSize:"0.75rem", whiteSpace:"nowrap" }}>
+                  {cat.icon} {cat.name}
+                </button>
+              ))}
+            </div>
+
             {!activeCat ? (
               <div style={{ color:"#444", fontSize:"0.85rem" }}>Selecciona uma categoria</div>
             ) : !activeSubId ? (
-              // Category overview
               <>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:24 }}>
                   <div>
-                    <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.8rem", fontWeight:300, color:ACCENT }}>{fmt(catMonthly(activeCatId))}</div>
-                    <div style={{ fontSize:"0.7rem", color:MUTED, marginTop:2 }}>{fmt(catMonthly(activeCatId)*12)} / ano · {activeCat.subs.length} subcategorias</div>
+                    <div className="cat-header" style={{ fontFamily:"Fraunces,serif", fontSize:"1.8rem", fontWeight:300, color:ACCENT }}>{fmt(catMonthly(activeCatId))}</div>
+                    <div className="stat-sub" style={{ fontSize:"0.7rem", color:MUTED, marginTop:2 }}>{fmt(catMonthly(activeCatId)*12)} / ano · {activeCat.subs.length} subcategorias</div>
                   </div>
                   <Btn onClick={() => openNewSub(activeCatId)} v="primary">+ subcategoria</Btn>
                 </div>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:12 }}>
+                <div className="card-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:12 }}>
                   {activeCat.subs.map(sub => {
                     const co = getCompany(sub.companyId);
                     const m = monthlyFromInvoices(sub.invoices);
@@ -878,7 +933,7 @@ function App() {
 
       {/* ── Subscriptions page ── */}
       {page === "subscriptions" && (
-        <div style={{ padding:"32px 40px" }}>
+        <div className="bottom-pad page-content" style={{ padding:"32px 40px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:24 }}>
             <div>
               <span style={{ fontFamily:"Fraunces,serif", fontSize:"1.8rem", fontWeight:300, color:ACCENT }}>
@@ -890,7 +945,7 @@ function App() {
             </div>
             <Btn onClick={openNewSubscription} v="primary">+ nova subscrição</Btn>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:12 }}>
+          <div className="card-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:12 }}>
             {(data.subscriptions||[]).map(sub => {
               const nextDate = subRenewalDate(sub);
               return (
@@ -945,12 +1000,12 @@ function App() {
 
       {/* ── Companies ── */}
       {page === "companies" && (
-        <div style={{ padding:"32px 40px" }}>
+        <div className="bottom-pad page-content" style={{ padding:"32px 40px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
             <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.35rem", fontWeight:300 }}>Empresas</div>
             <Btn onClick={() => { setCoF(emptyCo); setCoModal({ mode:"new" }); }} v="primary">+ nova empresa</Btn>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:12 }}>
+          <div className="card-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:12 }}>
             {data.companies.map(co => {
               const count = data.categories.reduce((s,cat) => s + cat.subs.filter(sub=>sub.companyId===co.id).length, 0);
               return (
@@ -973,7 +1028,7 @@ function App() {
 
       {/* ── Categories settings ── */}
       {page === "settings" && (
-        <div style={{ padding:"32px 40px", maxWidth:680 }}>
+        <div className="bottom-pad page-content" style={{ padding:"32px 40px", maxWidth:680 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
             <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.35rem", fontWeight:300 }}>Categorias</div>
             <Btn onClick={() => { setCatF({name:"",icon:""}); setCatModal({mode:"new"}); }} v="primary">+ nova categoria</Btn>
@@ -1018,7 +1073,7 @@ function App() {
           </div>
 
           {/* Contract info */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:20 }}>
+          <div className="info-grid" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", , gap:10, marginBottom:20 }}>
             <InfoChip label="Nº Contrato" value={viewSub.contractRef} />
             <InfoChip label="Adesão" value={viewSub.joinDate} />
             <InfoChip label="Renovação" value={viewSub.renewalDate} />
@@ -1095,8 +1150,7 @@ function App() {
       {(subModal?.mode === "new" || subModal?.mode === "edit") && (
         <Overlay onClose={() => setSubModal(null)}>
           <MTitle>{subModal.mode==="new" ? "Nova subcategoria" : "Editar subcategoria"}</MTitle>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-            <F label="Nome *"><input value={sf.name} onChange={e=>setSf(f=>({...f,name:e.target.value}))} /></F>
+          <div className="form-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <F label="Empresa" half>
               <select value={sf.companyId} onChange={e=>setSf(f=>({...f,companyId:e.target.value}))}>
                 <option value="">—</option>
