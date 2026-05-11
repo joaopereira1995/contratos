@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0d0d0f">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Contratos">
@@ -25,7 +26,7 @@
       background: #c8b89a; color: #0d0d0f; border: none; border-radius: 8px;
       padding: 12px 28px; font-size: 0.9rem; cursor: pointer; font-family: monospace; font-weight: 500;
     }
-    #gdrive-overlay .status { color: #555; font-size: 0.78rem; }
+    .gdrive-status { color: #555; font-size: 0.78rem; }
     #sync-indicator {
       position: fixed; bottom: 16px; right: 16px; z-index: 1000;
       font-size: 0.7rem; color: #444; font-family: monospace;
@@ -40,24 +41,21 @@
     <h1>Contratos</h1>
     <p>Os teus dados são guardados de forma segura na tua Google Drive.</p>
     <button id="login-btn">Entrar com Google</button>
-    <span class="status" id="gdrive-status">A inicializar...</span>
+    <span class="gdrive-status" id="gdrive-status">A inicializar...</span>
   </div>
   <div id="root"></div>
   <div id="sync-indicator">a guardar...</div>
 
-  <!-- React + Babel -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-  <!-- Recharts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/recharts/2.8.0/Recharts.min.js"></script>
 
-  <!-- Google Drive API -->
   <script>
-    const CLIENT_ID = '176085135923-ch4f9njgg2ocr3s3u5n7s1m5jst4vpe2.apps.googleusercontent.com';
-    const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
-    const FILE_NAME = 'contratos-data.json';
-    let tokenClient, accessToken, driveFileId;
+    const GDRIVE_CLIENT_ID = '176085135923-ch4f9njgg2ocr3s3u5n7s1m5jst4vpe2.apps.googleusercontent.com';
+    const GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
+    const GDRIVE_FILE = 'contratos-data.json';
+    let _tokenClient, _accessToken, _fileId;
 
     window.GDrive = {
       ready: false,
@@ -67,14 +65,14 @@
         const s = document.createElement('script');
         s.src = 'https://accounts.google.com/gsi/client';
         s.onload = () => {
-          tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: CLIENT_ID,
-            scope: SCOPES,
+          _tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: GDRIVE_CLIENT_ID,
+            scope: GDRIVE_SCOPES,
             callback: async (resp) => {
               if (resp.error) { console.error(resp); return; }
-              accessToken = resp.access_token;
+              _accessToken = resp.access_token;
               document.getElementById('gdrive-status').textContent = 'A carregar dados...';
-              await GDrive.loadOrCreate();
+              await GDrive._loadOrCreate();
               document.getElementById('gdrive-overlay').style.display = 'none';
               GDrive.ready = true;
               if (GDrive.onReady) GDrive.onReady();
@@ -83,74 +81,57 @@
           document.getElementById('gdrive-status').textContent = 'Pronto';
           document.getElementById('login-btn').onclick = () => {
             document.getElementById('gdrive-status').textContent = 'A autenticar...';
-            tokenClient.requestAccessToken({ prompt: 'consent' });
+            _tokenClient.requestAccessToken({ prompt: 'consent' });
           };
-          // Try silent sign-in
-          tokenClient.requestAccessToken({ prompt: '' });
+          _tokenClient.requestAccessToken({ prompt: '' });
         };
         document.head.appendChild(s);
       },
 
-      async loadOrCreate() {
-        // Search for existing file in appDataFolder
+      async _loadOrCreate() {
         const res = await fetch(
-          `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${FILE_NAME}'&fields=files(id,name)`,
-          { headers: { Authorization: `Bearer ${accessToken}` } }
+          `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GDRIVE_FILE}'&fields=files(id)`,
+          { headers: { Authorization: `Bearer ${_accessToken}` } }
         );
         const { files } = await res.json();
         if (files && files.length > 0) {
-          driveFileId = files[0].id;
+          _fileId = files[0].id;
           const content = await fetch(
-            `https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,
-            { headers: { Authorization: `Bearer ${accessToken}` } }
+            `https://www.googleapis.com/drive/v3/files/${_fileId}?alt=media`,
+            { headers: { Authorization: `Bearer ${_accessToken}` } }
           );
           const data = await content.json();
-          // Store in localStorage as cache
           localStorage.setItem('contratos_v3', JSON.stringify(data));
-        } else {
-          // File doesn't exist yet, will be created on first save
-          driveFileId = null;
         }
       },
 
       async save(data) {
-        const indicator = document.getElementById('sync-indicator');
-        indicator.classList.add('show');
+        const el = document.getElementById('sync-indicator');
+        el.classList.add('show');
         const body = JSON.stringify(data);
         try {
-          if (driveFileId) {
-            // Update existing file
-            await fetch(
-              `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,
-              {
-                method: 'PATCH',
-                headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                body
-              }
-            );
+          if (_fileId) {
+            await fetch(`https://www.googleapis.com/upload/drive/v3/files/${_fileId}?uploadType=media`, {
+              method: 'PATCH',
+              headers: { Authorization: `Bearer ${_accessToken}`, 'Content-Type': 'application/json' },
+              body
+            });
           } else {
-            // Create new file in appDataFolder
-            const meta = await fetch(
-              'https://www.googleapis.com/drive/v3/files?fields=id',
-              {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name: FILE_NAME, parents: ['appDataFolder'] })
-              }
-            );
+            const meta = await fetch('https://www.googleapis.com/drive/v3/files?fields=id', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${_accessToken}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: GDRIVE_FILE, parents: ['appDataFolder'] })
+            });
             const { id } = await meta.json();
-            driveFileId = id;
-            await fetch(
-              `https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=media`,
-              {
-                method: 'PATCH',
-                headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
-                body
-              }
-            );
+            _fileId = id;
+            await fetch(`https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=media`, {
+              method: 'PATCH',
+              headers: { Authorization: `Bearer ${_accessToken}`, 'Content-Type': 'application/json' },
+              body
+            });
           }
         } catch(e) { console.error('Drive save error:', e); }
-        setTimeout(() => indicator.classList.remove('show'), 1500);
+        setTimeout(() => el.classList.remove('show'), 1500);
       }
     };
 
@@ -160,10 +141,6 @@
   <script type="text/babel">
     const { useState, useEffect, useRef, useMemo } = React;
     const { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } = Recharts;
-
-    // ── Override save to also sync to Drive ──────────────────────────────────
-    const KEY = "contratos_v3";
-    function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
 
 // ─── Storage ─────────────────────────────────────────────────────────────────
 const KEY = "contratos_v3";
@@ -1396,29 +1373,26 @@ function App() {
   );
 }
 
-    // ── Boot: wait for GDrive then render ────────────────────────────────────
     function boot() {
       const root = ReactDOM.createRoot(document.getElementById('root'));
       root.render(<App />);
     }
-
     if (window.GDrive && window.GDrive.ready) {
       boot();
     } else {
       window.GDrive.onReady = boot;
-      // If Drive never fires (e.g. offline), boot after 3s with local data
       setTimeout(() => {
         if (!window.GDrive.ready) {
           document.getElementById('gdrive-overlay').style.display = 'none';
           boot();
         }
-      }, 3000);
+      }, 4000);
     }
   </script>
 
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js').catch(console.error);
+      navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW:', e));
     }
   </script>
 </body>
