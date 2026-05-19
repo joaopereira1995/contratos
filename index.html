@@ -184,7 +184,7 @@ window.addEventListener('load', () => {
       callback: async ({ credential }) => {
         try {
           document.getElementById('auth-err').textContent = 'A autenticar...';
-          const payload = JSON.parse(atob(credential.split('.')[1]));
+          const _b64=credential.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'); const payload=JSON.parse(atob(_b64+'=='.slice(0,(4-_b64.length%4)%4)));
           await sb.signInWithGoogle(credential);
           await sb.getOrCreateProfile(payload.email, payload.name);
           document.getElementById('auth-screen').style.display = 'none';
