@@ -12,1213 +12,1000 @@
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon-192.png">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: #0d0d0f; color: #e8e4dc; font-family: monospace; }
-    #root { min-height: 100vh; }
-    #gdrive-overlay {
-      position: fixed; inset: 0; background: #0d0d0f;
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      z-index: 9999; gap: 16px;
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#0d0d0f;color:#e8e4dc;font-family:monospace}
+    #root{min-height:100vh}
+    #auth-screen{position:fixed;inset:0;background:#0d0d0f;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:20px}
+    #auth-screen h1{font-family:serif;font-weight:300;font-size:2.2rem;color:#c8b89a;letter-spacing:-0.02em}
+    #auth-screen p{color:#555;font-size:0.85rem;max-width:300px;text-align:center;line-height:1.6}
+    #auth-screen button{background:#c8b89a;color:#0d0d0f;border:none;border-radius:8px;padding:13px 32px;font-size:0.9rem;cursor:pointer;font-family:monospace;font-weight:500;display:flex;align-items:center;gap:10px}
+    #auth-screen .err{color:#ff6b6b;font-size:0.78rem}
+    #sync{position:fixed;bottom:80px;right:16px;z-index:1000;font-size:0.7rem;color:#444;font-family:monospace;background:#131317;border:1px solid #1e1e24;border-radius:6px;padding:4px 10px;opacity:0;transition:opacity .3s;pointer-events:none}
+    #sync.show{opacity:1}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0d0d0f}::-webkit-scrollbar-thumb{background:#2a2a2e}
+    input,textarea,select{font-family:monospace;background:#16161a;border:1px solid #2a2a2e;color:#e8e4dc;border-radius:6px;padding:8px 12px;font-size:0.82rem;width:100%;outline:none;transition:border .2s}
+    input:focus,textarea:focus,select:focus{border-color:#c8b89a}
+    select option{background:#16161a}
+    button{cursor:pointer;font-family:monospace}
+    .rh:hover{background:#1a1a1e!important}
+    .tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:#0d0d0f;border-top:1px solid #1e1e24;padding-bottom:env(safe-area-inset-bottom)}
+    .tab-bar button{flex:1;background:transparent;border:none;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:0.55rem;letter-spacing:0.04em;color:#555;transition:color .15s}
+    .tab-bar button.active{color:#c8b89a}
+    .tab-bar button svg{width:22px;height:22px;stroke-width:1.5}
+    @media(max-width:768px){
+      .tab-bar{display:flex}
+      .desk-nav{display:none!important}
+      .desk-aside{display:none!important}
+      .pg{padding:16px 16px 80px!important}
+      .card-grid{grid-template-columns:1fr!important}
+      .dash-grid{grid-template-columns:1fr!important}
+      .dash-cards{grid-template-columns:1fr 1fr!important}
+      .info-grid{grid-template-columns:1fr 1fr!important}
+      .mob-full{max-width:100%!important;max-height:95vh!important;border-radius:12px 12px 0 0!important;padding:20px 16px 32px!important}
+      .mob-overlay{align-items:flex-end!important;padding:0!important}
+      .fgrid{grid-template-columns:1fr!important}
+      .mob-top{display:flex!important}
+      .main-area{padding:16px 16px 80px!important}
     }
-    #gdrive-overlay h1 { font-family: serif; font-weight: 300; font-size: 2rem; color: #c8b89a; }
-    #gdrive-overlay p { color: #555; font-size: 0.85rem; max-width: 320px; text-align: center; line-height: 1.6; }
-    #gdrive-overlay button {
-      background: #c8b89a; color: #0d0d0f; border: none; border-radius: 8px;
-      padding: 12px 28px; font-size: 0.9rem; cursor: pointer; font-family: monospace; font-weight: 500;
-    }
-    .gdrive-status { color: #555; font-size: 0.78rem; }
-    #sync-indicator {
-      position: fixed; bottom: 80px; right: 16px; z-index: 1000;
-      font-size: 0.7rem; color: #444; font-family: monospace;
-      background: #131317; border: 1px solid #1e1e24; border-radius: 6px;
-      padding: 4px 10px; opacity: 0; transition: opacity 0.3s;
-    }
-    #sync-indicator.show { opacity: 1; }
   </style>
 </head>
 <body>
-  <div id="gdrive-overlay">
-    <h1>Contratos</h1>
-    <p>Os teus dados são guardados de forma segura na tua Google Drive.</p>
-    <button id="login-btn">Entrar com Google</button>
-    <span class="gdrive-status" id="gdrive-status">A inicializar...</span>
-  </div>
-  <div id="root"></div>
-  <div id="sync-indicator">a guardar...</div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
-  
+<div id="auth-screen">
+  <h1>Contratos</h1>
+  <p>Gestão de contratos, faturas e subscrições pessoais.</p>
+  <button id="login-btn">
+    <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#0d0d0f" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#0d0d0f" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#0d0d0f" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#0d0d0f" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    Entrar com Google
+  </button>
+  <span class="err" id="auth-err"></span>
+</div>
 
-  <script>
-    const GDRIVE_CLIENT_ID = '176085135923-ch4f9njgg2ocr3s3u5n7s1m5jst4vpe2.apps.googleusercontent.com';
-    const GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
-    const GDRIVE_FILE = 'contratos-data.json';
-    let _tokenClient, _accessToken, _fileId;
+<div id="root" style="display:none"></div>
+<div id="sync">a guardar...</div>
 
-    window.GDrive = {
-      ready: false,
-      onReady: null,
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://accounts.google.com/gsi/client" async></script>
 
-      init() {
-        const s = document.createElement('script');
-        s.src = 'https://accounts.google.com/gsi/client';
-        s.onload = () => {
-          _tokenClient = google.accounts.oauth2.initTokenClient({
-            client_id: GDRIVE_CLIENT_ID,
-            scope: GDRIVE_SCOPES,
-            callback: async (resp) => {
-              if (resp.error) { console.error(resp); return; }
-              _accessToken = resp.access_token;
-              document.getElementById('gdrive-status').textContent = 'A carregar dados...';
-              await GDrive._loadOrCreate();
-              document.getElementById('gdrive-overlay').style.display = 'none';
-              GDrive.ready = true;
-              if (GDrive.onReady) GDrive.onReady();
-            }
-          });
-          document.getElementById('gdrive-status').textContent = 'Pronto';
-          document.getElementById('login-btn').onclick = () => {
-            document.getElementById('gdrive-status').textContent = 'A autenticar...';
-            _tokenClient.requestAccessToken({ prompt: 'consent' });
-          };
-          _tokenClient.requestAccessToken({ prompt: '' });
-        };
-        document.head.appendChild(s);
+<script>
+const SUPABASE_URL = 'https://wknwukrgitultvuyyjvg.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indrbnd1a3JnaXR1bHR2dXl5anZnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg0OTE0NDgsImV4cCI6MjA5NDA2NzQ0OH0.hecb0vXFIn1YnErgxSIwxqvrJ1eRMr2fWDWOXEVqw2A';
+const GOOGLE_CLIENT_ID = '176085135923-ch4f9njgg2ocr3s3u5n7s1m5jst4vpe2.apps.googleusercontent.com';
+
+// ─── Supabase client ─────────────────────────────────────────────────────────
+const sb = {
+  _jwt: null,
+  _profile: null,
+
+  headers() {
+    const h = { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON };
+    if (this._jwt) h['Authorization'] = `Bearer ${this._jwt}`;
+    return h;
+  },
+
+  async rpc(path, method='GET', body=null) {
+    const r = await fetch(SUPABASE_URL + path, {
+      method, headers: this.headers(),
+      body: body ? JSON.stringify(body) : null
+    });
+    if (!r.ok) { const e = await r.text(); throw new Error(e); }
+    const txt = await r.text();
+    return txt ? JSON.parse(txt) : null;
+  },
+
+  async from(table) {
+    return {
+      _table: table,
+      _filters: [],
+      _order: null,
+      eq(col, val) { this._filters.push(`${col}=eq.${val}`); return this; },
+      order(col, {ascending=true}={}) { this._order = `${col}.${ascending?'asc':'desc'}`; return this; },
+      async select() {
+        let url = `${SUPABASE_URL}/rest/v1/${this._table}?select=*`;
+        if (this._filters.length) url += '&' + this._filters.join('&');
+        if (this._order) url += `&order=${this._order}`;
+        const r = await fetch(url, { headers: sb.headers() });
+        if (!r.ok) throw new Error(await r.text());
+        return r.json();
       },
-
-      async _loadOrCreate() {
-        const res = await fetch(
-          `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GDRIVE_FILE}'&fields=files(id)`,
-          { headers: { Authorization: `Bearer ${_accessToken}` } }
-        );
-        const { files } = await res.json();
-        if (files && files.length > 0) {
-          _fileId = files[0].id;
-          const content = await fetch(
-            `https://www.googleapis.com/drive/v3/files/${_fileId}?alt=media`,
-            { headers: { Authorization: `Bearer ${_accessToken}` } }
-          );
-          const data = await content.json();
-          localStorage.setItem('contratos_v3', JSON.stringify(data));
-        }
+      async insert(data) {
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/${this._table}`, {
+          method:'POST', headers: {...sb.headers(), 'Prefer':'return=representation'},
+          body: JSON.stringify(Array.isArray(data)?data:[data])
+        });
+        if (!r.ok) throw new Error(await r.text());
+        return r.json();
       },
-
-      async save(data) {
-        const el = document.getElementById('sync-indicator');
-        el.classList.add('show');
-        const body = JSON.stringify(data);
-        try {
-          if (_fileId) {
-            await fetch(`https://www.googleapis.com/upload/drive/v3/files/${_fileId}?uploadType=media`, {
-              method: 'PATCH',
-              headers: { Authorization: `Bearer ${_accessToken}`, 'Content-Type': 'application/json' },
-              body
-            });
-          } else {
-            const meta = await fetch('https://www.googleapis.com/drive/v3/files?fields=id', {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${_accessToken}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ name: GDRIVE_FILE, parents: ['appDataFolder'] })
-            });
-            const { id } = await meta.json();
-            _fileId = id;
-            await fetch(`https://www.googleapis.com/upload/drive/v3/files/${id}?uploadType=media`, {
-              method: 'PATCH',
-              headers: { Authorization: `Bearer ${_accessToken}`, 'Content-Type': 'application/json' },
-              body
-            });
-          }
-        } catch(e) { console.error('Drive save error:', e); }
-        setTimeout(() => el.classList.remove('show'), 1500);
+      async update(data) {
+        let url = `${SUPABASE_URL}/rest/v1/${this._table}?`;
+        if (this._filters.length) url += this._filters.join('&');
+        const r = await fetch(url, {
+          method:'PATCH', headers: {...sb.headers(), 'Prefer':'return=representation'},
+          body: JSON.stringify(data)
+        });
+        if (!r.ok) throw new Error(await r.text());
+        return r.json();
+      },
+      async delete() {
+        let url = `${SUPABASE_URL}/rest/v1/${this._table}?`;
+        if (this._filters.length) url += this._filters.join('&');
+        const r = await fetch(url, { method:'DELETE', headers: sb.headers() });
+        if (!r.ok) throw new Error(await r.text());
+        return true;
+      },
+      async upsert(data) {
+        const r = await fetch(`${SUPABASE_URL}/rest/v1/${this._table}`, {
+          method:'POST', headers: {...sb.headers(), 'Prefer':'resolution=merge-duplicates,return=representation'},
+          body: JSON.stringify(Array.isArray(data)?data:[data])
+        });
+        if (!r.ok) throw new Error(await r.text());
+        return r.json();
       }
     };
+  },
 
-    GDrive.init();
-  </script>
+  async signInWithGoogle(id_token) {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=id_token`, {
+      method:'POST',
+      headers: { 'Content-Type':'application/json', 'apikey': SUPABASE_ANON },
+      body: JSON.stringify({ provider:'google', id_token })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const data = await r.json();
+    this._jwt = data.access_token;
+    return data;
+  },
 
-  <script type="text/babel" data-type="module">
-    const { useState, useEffect, useRef, useMemo } = React;
-    const Recharts = await import("https://esm.sh/recharts@2.8.0");
-    const { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } = Recharts;
+  async getOrCreateProfile(email, name) {
+    const t = await this.from('profiles');
+    let rows = await t.eq('email', email).select();
+    if (!rows || rows.length === 0) {
+      const t2 = await this.from('profiles');
+      rows = await t2.insert({ email, name });
+    }
+    this._profile = rows[0];
+    return this._profile;
+  },
 
-// ─── Storage ─────────────────────────────────────────────────────────────────
-const KEY = "contratos_v3";
+  get profile() { return this._profile; }
+};
 
-function uid() { return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+// ─── Auth flow ────────────────────────────────────────────────────────────────
+let _resolveAuth;
+window._authReady = new Promise(r => { _resolveAuth = r; });
 
-// ── Auto-invoice generation ───────────────────────────────────────────────────
-const PERIOD_MONTHS = { Mensal: 1, Trimestral: 3, Semestral: 6, Anual: 12, "Único": 0 };
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    if (!window.google) return;
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: async ({ credential }) => {
+        try {
+          document.getElementById('auth-err').textContent = 'A autenticar...';
+          const payload = JSON.parse(atob(credential.split('.')[1]));
+          await sb.signInWithGoogle(credential);
+          await sb.getOrCreateProfile(payload.email, payload.name);
+          document.getElementById('auth-screen').style.display = 'none';
+          document.getElementById('root').style.display = 'block';
+          _resolveAuth(sb.profile);
+        } catch(e) {
+          document.getElementById('auth-err').textContent = 'Erro: ' + e.message;
+        }
+      },
+      auto_select: true,
+    });
+    google.accounts.id.prompt();
+    document.getElementById('login-btn').onclick = () => {
+      google.accounts.id.prompt();
+    };
+  }, 500);
+});
 
-function generateFixedInvoices(sub) {
-  if (!sub.fixedValue || !sub.fixedAmount || !sub.createdAt) return [];
-  const fixedPeriod = sub.fixedPeriod || "Mensal";
-  const stepMonths = PERIOD_MONTHS[fixedPeriod] || 1;
-  if (stepMonths === 0) return [];
+// ─── Sync indicator ───────────────────────────────────────────────────────────
+let _syncTimer;
+window.showSync = () => {
+  const el = document.getElementById('sync');
+  el.classList.add('show');
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(() => el.classList.remove('show'), 2000);
+};
+</script>
 
-  const day = Math.min(parseInt(sub.fixedDay) || 1, 28);
-  const today = new Date();
-  today.setHours(23, 59, 59, 0);
+<script type="text/babel" data-type="module">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+const Recharts = await import("https://esm.sh/recharts@2.8.0");
+const { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } = Recharts;
 
-  const createdAt = new Date(sub.createdAt);
+// ─── Constants ────────────────────────────────────────────────────────────────
+const ACCENT="#c8b89a", BG="#0d0d0f", SURFACE="#131317", SURFACE2="#16161a", BORDER="#1e1e24", MUTED="#555";
+const CHART_COLORS=["#c8b89a","#7eb8c9","#9bb87e","#c97e7e","#b89ec8","#c9b07e","#7ec9b8","#c97eac","#a8c97e","#c9a87e"];
+const PERIODS=["Mensal","Trimestral","Semestral","Anual","Único"];
+const PERIOD_MONTHS={Mensal:1,Trimestral:3,Semestral:6,Anual:12,"Único":0};
 
-  // Find first cursor: the first occurrence of (fixedDay [+ fixedMonth]) on or after createdAt
-  let cursor;
-  if (sub.invoices && sub.invoices.filter(i => i.auto).length > 0) {
-    // Continue from after the last auto invoice
-    const dates = sub.invoices.filter(i => i.auto).map(i => i.dateFrom).filter(Boolean).sort();
-    const last = new Date(dates[dates.length - 1]);
-    cursor = new Date(last.getFullYear(), last.getMonth() + stepMonths, day);
+function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36);}
+function fmt(val){return(parseFloat(val)||0).toLocaleString("pt-PT",{style:"currency",currency:"EUR"});}
+function daysUntil(d){if(!d)return null;return Math.ceil((new Date(d)-new Date())/86400000);}
+function monthlyFromInvoices(invoices=[]){if(!invoices.length)return 0;return invoices.reduce((s,i)=>s+(parseFloat(i.amount)||0),0)/invoices.length;}
+function annualFromInvoices(invoices=[]){return invoices.reduce((s,i)=>s+(parseFloat(i.amount)||0),0);}
+function subMonthly(sub){const v=parseFloat(sub.value)||0;return sub.period==="Anual"?v/12:v;}
+function subRenewalDate(sub){
+  const today=new Date(),year=today.getFullYear();
+  if(sub.period==="Anual"){
+    if(!sub.renewalDay||!sub.renewalMonth)return "";
+    let d=new Date(year,parseInt(sub.renewalMonth)-1,parseInt(sub.renewalDay));
+    if(d<today)d=new Date(year+1,parseInt(sub.renewalMonth)-1,parseInt(sub.renewalDay));
+    return d.toISOString().slice(0,10);
   } else {
-    if (fixedPeriod === "Anual" && sub.fixedMonth) {
-      const month = parseInt(sub.fixedMonth) - 1;
-      // Try this year first, else next year
-      cursor = new Date(createdAt.getFullYear(), month, day);
-      if (cursor < createdAt) cursor = new Date(createdAt.getFullYear() + 1, month, day);
+    if(!sub.renewalDay)return "";
+    let d=new Date(year,today.getMonth(),parseInt(sub.renewalDay));
+    if(d<today)d=new Date(year,today.getMonth()+1,parseInt(sub.renewalDay));
+    return d.toISOString().slice(0,10);
+  }
+}
+
+// ─── Auto invoices ────────────────────────────────────────────────────────────
+function generateFixedInvoices(sub, existingInvoices=[]) {
+  if(!sub.fixed_value||!sub.fixed_amount||!sub.created_at_app)return[];
+  const step=PERIOD_MONTHS[sub.fixed_period||"Mensal"]||1;
+  if(step===0)return[];
+  const day=Math.min(parseInt(sub.fixed_day)||1,28);
+  const today=new Date(); today.setHours(23,59,59,0);
+  const createdAt=new Date(sub.created_at_app);
+  let cursor;
+  const autoInvs=existingInvoices.filter(i=>i.auto);
+  if(autoInvs.length>0){
+    const dates=autoInvs.map(i=>i.date_from).filter(Boolean).sort();
+    const last=new Date(dates[dates.length-1]);
+    cursor=new Date(last.getFullYear(),last.getMonth()+step,day);
+  } else {
+    if((sub.fixed_period||"Mensal")==="Anual"&&sub.fixed_month){
+      const month=parseInt(sub.fixed_month)-1;
+      cursor=new Date(createdAt.getFullYear(),month,day);
+      if(cursor<createdAt)cursor=new Date(createdAt.getFullYear()+1,month,day);
     } else {
-      // Mensal: find the next occurrence of 'day' on or after createdAt
-      cursor = new Date(createdAt.getFullYear(), createdAt.getMonth(), day);
-      if (cursor < createdAt) cursor = new Date(createdAt.getFullYear(), createdAt.getMonth() + 1, day);
+      cursor=new Date(createdAt.getFullYear(),createdAt.getMonth(),day);
+      if(cursor<createdAt)cursor=new Date(createdAt.getFullYear(),createdAt.getMonth()+step,day);
     }
   }
-
-  const newInvoices = [];
-  let safety = 0;
-  while (cursor <= today && safety < 120) {
+  const newInvs=[];
+  let safety=0;
+  while(cursor<=today&&safety<120){
     safety++;
-    const dateFrom = cursor.toISOString().slice(0, 10);
-    const nextCursor = new Date(cursor.getFullYear(), cursor.getMonth() + stepMonths, day);
-    const endDate = new Date(nextCursor.getFullYear(), nextCursor.getMonth(), nextCursor.getDate() - 1);
-    const dateTo = endDate.toISOString().slice(0, 10);
-    newInvoices.push({ id: uid(), dateFrom, dateTo, amount: sub.fixedAmount, notes: "", file: null, fileName: "", auto: true });
-    cursor = nextCursor;
+    const date_from=cursor.toISOString().slice(0,10);
+    const next=new Date(cursor.getFullYear(),cursor.getMonth()+step,day);
+    const end=new Date(next.getFullYear(),next.getMonth(),next.getDate()-1);
+    newInvs.push({id:uid(),subcategory_id:sub.id,owner_id:sub.owner_id,date_from,date_to:end.toISOString().slice(0,10),amount:sub.fixed_amount,notes:"",file_name:"",file_data:"",auto:true});
+    cursor=next;
   }
-  return newInvoices;
+  return newInvs;
 }
 
-function applyAutoInvoices(data) {
-  data.categories.forEach(cat => {
-    cat.subs.forEach(sub => {
-      if (!sub.fixedValue) return;
-      const newInvs = generateFixedInvoices(sub);
-      if (newInvs.length > 0) {
-        sub.invoices = [...(sub.invoices || []), ...newInvs];
-      }
-    });
-  });
+// ─── DB helpers ───────────────────────────────────────────────────────────────
+async function dbSelect(table, filters={}) {
+  const t = await sb.from(table);
+  let q = t;
+  for(const [k,v] of Object.entries(filters)) q = q.eq(k,v);
+  return q.select();
+}
+async function dbUpsert(table, data) {
+  window.showSync();
+  const t = await sb.from(table);
+  return t.upsert(data);
+}
+async function dbDelete(table, id) {
+  window.showSync();
+  const t = await sb.from(table);
+  return t.eq('id',id).delete();
 }
 
-function load() {
-  try {
-    const d = JSON.parse(localStorage.getItem(KEY)) || defaultData();
-    // Migration: existing fixed-value subs without createdAt get today as createdAt
-    // so they don't generate back-dated invoices
-    d.categories.forEach(cat => cat.subs.forEach(sub => {
-      if (sub.fixedValue && !sub.createdAt) sub.createdAt = new Date().toISOString();
-    }));
-    applyAutoInvoices(d);
-    save(d);
-    return d;
-  }
-  catch { return defaultData(); }
-}
-function save(d) { localStorage.setItem(KEY, JSON.stringify(d)); if(window.GDrive&&window.GDrive.ready) window.GDrive.save(d); }
-function defaultData() {
-  return {
-    categories: [
-      { id: "cat_casa", name: "Casa", icon: "⌂", subs: [
-        { id: "sub_energia", name: "Energia", companyId: "", contractRef: "", joinDate: "", renewalDate: "", period: "Mensal", notes: "", invoices: [], contractDocs: [], fixedValue: false, fixedAmount: "", fixedDay: 1 },
-        { id: "sub_agua", name: "Água", companyId: "", contractRef: "", joinDate: "", renewalDate: "", period: "Mensal", notes: "", invoices: [], contractDocs: [], fixedValue: false, fixedAmount: "", fixedDay: 1 },
-        { id: "sub_internet", name: "Internet", companyId: "", contractRef: "", joinDate: "", renewalDate: "", period: "Mensal", notes: "", invoices: [], contractDocs: [], fixedValue: false, fixedAmount: "", fixedDay: 1 },
-        { id: "sub_credito", name: "Crédito Habitação", companyId: "", contractRef: "", joinDate: "", renewalDate: "", period: "Mensal", notes: "", invoices: [], contractDocs: [], fixedValue: false, fixedAmount: "", fixedDay: 1 },
-        { id: "sub_seguro_casa", name: "Seguro Casa", companyId: "", contractRef: "", joinDate: "", renewalDate: "", period: "Anual", notes: "", invoices: [], contractDocs: [], fixedValue: false, fixedAmount: "", fixedDay: 1 },
-      ]},
-      { id: "cat_carro", name: "Carro", icon: "◈", subs: [
-        { id: "sub_seguro_auto", name: "Seguro Auto", companyId: "", contractRef: "", joinDate: "", renewalDate: "", period: "Anual", notes: "", invoices: [], contractDocs: [], fixedValue: false, fixedAmount: "", fixedDay: 1 },
-        { id: "sub_iuc", name: "IUC", companyId: "", contractRef: "", joinDate: "", renewalDate: "", period: "Anual", notes: "", invoices: [], contractDocs: [], fixedValue: false, fixedAmount: "", fixedDay: 1 },
-      ]},
-      { id: "cat_pessoal", name: "Pessoal", icon: "◎", subs: [
-        { id: "sub_vida", name: "Seguro de Vida", companyId: "", contractRef: "", joinDate: "", renewalDate: "", period: "Mensal", notes: "", invoices: [], contractDocs: [], fixedValue: false, fixedAmount: "", fixedDay: 1 },
-      ]},
-    ],
-    subscriptions: [],
-    companies: [],
-  };
-}
-function emptySub(name = "") {
-  return { id: uid(), name, companyId: "", contractRef: "", joinDate: "", renewalDate: "", period: "Mensal", notes: "", invoices: [], contractDocs: [], fixedValue: false, fixedAmount: "", fixedDay: 1 };
+// ─── UI Primitives ────────────────────────────────────────────────────────────
+function RenewalBadge({date}){
+  const days=daysUntil(date);
+  if(days===null)return null;
+  const[bg,col]=days<0?["#3a1a1a","#ff6b6b"]:days<=30?["#3a2a0a","#ffb347"]:["#1a2a1a","#6bcb77"];
+  return <span style={{fontSize:"0.65rem",padding:"2px 8px",borderRadius:20,background:bg,color:col,border:`1px solid ${col}33`}}>{days<0?`Venceu há ${Math.abs(days)}d`:days===0?"Hoje":`${days}d`}</span>;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-const PERIODS = ["Mensal", "Trimestral", "Semestral", "Anual", "Único"];
-const CHART_COLORS = ["#c8b89a","#7eb8c9","#9bb87e","#c97e7e","#b89ec8","#c9b07e","#7ec9b8","#c97eac","#a8c97e","#c9a87e"];
-const ACCENT = "#c8b89a";
-const BG = "#0d0d0f";
-const SURFACE = "#131317";
-const SURFACE2 = "#16161a";
-const BORDER = "#1e1e24";
-const MUTED = "#555";
-
-function fmt(val) {
-  return (parseFloat(val) || 0).toLocaleString("pt-PT", { style: "currency", currency: "EUR" });
-}
-function daysUntil(d) {
-  if (!d) return null;
-  return Math.ceil((new Date(d) - new Date()) / 86400000);
-}
-function monthlyFromInvoices(invoices = []) {
-  // average monthly from all invoices
-  if (!invoices.length) return 0;
-  const total = invoices.reduce((s, inv) => s + (parseFloat(inv.amount) || 0), 0);
-  return total / invoices.length;
-}
-function annualFromInvoices(invoices = []) {
-  return invoices.reduce((s, inv) => s + (parseFloat(inv.amount) || 0), 0);
-}
-function subRenewalDate(sub) {
-  // Returns next renewal date string for a subscription
-  const today = new Date();
-  const year = today.getFullYear();
-  if (sub.period === "Anual") {
-    if (!sub.renewalDay || !sub.renewalMonth) return "";
-    let d = new Date(year, parseInt(sub.renewalMonth) - 1, parseInt(sub.renewalDay));
-    if (d < today) d = new Date(year + 1, parseInt(sub.renewalMonth) - 1, parseInt(sub.renewalDay));
-    return d.toISOString().slice(0, 10);
-  } else {
-    if (!sub.renewalDay) return "";
-    let d = new Date(year, today.getMonth(), parseInt(sub.renewalDay));
-    if (d < today) d = new Date(year, today.getMonth() + 1, parseInt(sub.renewalDay));
-    return d.toISOString().slice(0, 10);
-  }
-}
-function subMonthly(sub) {
-  const v = parseFloat(sub.value) || 0;
-  return sub.period === "Anual" ? v / 12 : v;
+function SharedBadge({shared}){
+  return <span style={{fontSize:"0.62rem",padding:"2px 7px",borderRadius:20,background:shared?"#1a2a1a":"#1e1e24",color:shared?"#6bcb77":"#555",border:`1px solid ${shared?"#6bcb7733":"#2a2a2e"}`}}>{shared?"partilhada":"privada"}</span>;
 }
 
-// ─── UI primitives ────────────────────────────────────────────────────────────
-function RenewalBadge({ date }) {
-  const days = daysUntil(date);
-  if (days === null) return null;
-  const [bg, col] = days < 0 ? ["#3a1a1a","#ff6b6b"] : days <= 30 ? ["#3a2a0a","#ffb347"] : ["#1a2a1a","#6bcb77"];
-  return <span style={{ fontSize:"0.65rem", padding:"2px 8px", borderRadius:20, background:bg, color:col, border:`1px solid ${col}33` }}>
-    {days < 0 ? `Venceu há ${Math.abs(days)}d` : days === 0 ? "Hoje" : `${days}d`}
-  </span>;
-}
-
-function Overlay({ onClose, children, wide }) {
-  return (
-    <div className="mobile-overlay" onClick={e => e.target === e.currentTarget && onClose()}
-      style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.82)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:300, padding:16 }}>
-      <div className="mobile-full" style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:14, padding:30, width:"100%", maxWidth: wide ? 700 : 520, maxHeight:"92vh", overflowY:"auto" }}>
+function Overlay({onClose,children,wide}){
+  return(
+    <div className="mob-overlay" onClick={e=>e.target===e.currentTarget&&onClose()}
+      style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.82)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:16}}>
+      <div className="mob-full" style={{background:SURFACE,border:`1px solid ${BORDER}`,borderRadius:14,padding:30,width:"100%",maxWidth:wide?700:520,maxHeight:"92vh",overflowY:"auto"}}>
         {children}
       </div>
     </div>
   );
 }
 
-function MTitle({ children }) {
-  return <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.2rem", fontWeight:300, color:"#e8e4dc", marginBottom:20 }}>{children}</div>;
+function MTitle({children}){return <div style={{fontFamily:"Fraunces,serif",fontSize:"1.2rem",fontWeight:300,color:"#e8e4dc",marginBottom:20}}>{children}</div>;}
+function F({label,children,half}){return <div style={{marginBottom:13,gridColumn:half?undefined:"1/-1"}}><div style={{fontSize:"0.65rem",color:"#666",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:4}}>{label}</div>{children}</div>;}
+function Btn({onClick,v="ghost",children,s={}}){
+  const base={fontFamily:"'DM Mono',monospace",borderRadius:7,padding:"7px 16px",fontSize:"0.78rem",cursor:"pointer"};
+  const variants={primary:{background:ACCENT,border:"none",color:BG,fontWeight:500},ghost:{background:"transparent",border:`1px solid ${BORDER}`,color:"#888"},danger:{background:"transparent",border:"1px solid #3a1a1a",color:"#ff6b6b"},subtle:{background:SURFACE2,border:`1px solid ${BORDER}`,color:"#777"}};
+  return <button onClick={onClick} style={{...base,...variants[v],...s}}>{children}</button>;
 }
-
-function F({ label, children, half }) {
-  return <div style={{ marginBottom:13, gridColumn: half ? undefined : "1/-1" }}>
-    <div style={{ fontSize:"0.65rem", color:"#666", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:4 }}>{label}</div>
-    {children}
-  </div>;
-}
-
-function Btn({ onClick, v="ghost", children, s={} }) {
-  const base = { fontFamily:"'DM Mono',monospace", borderRadius:7, padding:"7px 16px", fontSize:"0.78rem", cursor:"pointer", transition:"opacity .15s" };
-  const variants = {
-    primary: { background:ACCENT, border:"none", color:BG, fontWeight:500 },
-    ghost:   { background:"transparent", border:`1px solid ${BORDER}`, color:"#888" },
-    danger:  { background:"transparent", border:"1px solid #3a1a1a", color:"#ff6b6b" },
-    subtle:  { background:SURFACE2, border:`1px solid ${BORDER}`, color:"#777" },
-  };
-  return <button onClick={onClick} style={{ ...base, ...variants[v], ...s }}>{children}</button>;
-}
-
-function InfoChip({ label, value }) {
-  return <div style={{ background:"#0d0d0f", borderRadius:7, padding:"8px 12px" }}>
-    <div style={{ fontSize:"0.6rem", color:MUTED, letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:3 }}>{label}</div>
-    <div style={{ fontSize:"0.8rem", color:ACCENT }}>{value || "—"}</div>
-  </div>;
-}
-
-// ─── Dashboard Page Component ─────────────────────────────────────────────────
-function DashboardPage({ data, grandMonthly, catMonthly, dashCat, dashSub, onGoToSub, onGoToSubscription, fmt, subMonthlyFn, monthlyFromInvoicesFn, ACCENT, SURFACE, BORDER, MUTED, CHART_COLORS }) {
-  const [drilldown, setDrilldown] = useState(null); // 'mensal' | 'anual' | 'categorias' | 'subscricoes'
-
-  const subTotal = (data.subscriptions||[]).reduce((s,sub)=>s+subMonthlyFn(sub),0);
-
-  // Build drilldown rows
-  const drillRows = useMemo(() => {
-    if (drilldown === "mensal" || drilldown === "anual") {
-      const rows = [];
-      data.categories.forEach(cat => {
-        cat.subs.forEach(sub => {
-          const m = monthlyFromInvoicesFn(sub.invoices);
-          if (m > 0) rows.push({ label: sub.name, sublabel: cat.name, value: drilldown === "anual" ? m*12 : m, catId: cat.id, subId: sub.id, type: "sub" });
-        });
-      });
-      (data.subscriptions||[]).forEach(sub => {
-        const m = subMonthlyFn(sub);
-        if (m > 0) rows.push({ label: sub.name, sublabel: "Subscrição", value: drilldown === "anual" ? m*12 : m, subId: sub.id, type: "subscricao" });
-      });
-      return rows.sort((a,b) => b.value - a.value);
-    }
-    if (drilldown === "categorias") {
-      return data.categories.map(cat => ({
-        label: cat.name, sublabel: `${cat.subs.length} subcategorias`,
-        value: catMonthly(cat.id), catId: cat.id, type: "categoria"
-      })).filter(r => r.value > 0).sort((a,b) => b.value - a.value);
-    }
-    if (drilldown === "subscricoes") {
-      return (data.subscriptions||[]).map(sub => ({
-        label: sub.name, sublabel: sub.period === "Anual" ? "Anual" : "Mensal",
-        value: subMonthlyFn(sub), subId: sub.id, type: "subscricao"
-      })).sort((a,b) => b.value - a.value);
-    }
-    return [];
-  }, [drilldown, data]);
-
-  const summaryCards = [
-    { id:"mensal",       label:"Total mensal",  value: fmt(grandMonthly) },
-    { id:"anual",        label:"Total anual",   value: fmt(grandMonthly*12) },
-    { id:"categorias",   label:"Categorias",    value: data.categories.length },
-    { id:"subscricoes",  label:"Subscrições",   value: (data.subscriptions||[]).length },
-  ];
-
-  return (
-    <div className="bottom-pad" style={{ padding:"32px 40px" }}>
-      <div className="dash-cards" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:32 }}>
-        {summaryCards.map(card => (
-          <div key={card.id} onClick={() => setDrilldown(drilldown===card.id ? null : card.id)}
-            style={{ background: drilldown===card.id ? "#1e1e2a" : SURFACE, border:`1px solid ${drilldown===card.id ? "#4a4a6a" : BORDER}`, borderRadius:10, padding:"16px 20px", cursor:"pointer", transition:"all .15s" }}
-            onMouseEnter={e=>{ if(drilldown!==card.id) e.currentTarget.style.borderColor="#3a3a3e"; }}
-            onMouseLeave={e=>{ if(drilldown!==card.id) e.currentTarget.style.borderColor=BORDER; }}>
-            <div style={{ fontSize:"0.62rem", color:MUTED, letterSpacing:"0.07em", textTransform:"uppercase", marginBottom:6 }}>{card.label}</div>
-            <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.5rem", fontWeight:300, color:ACCENT }}>{card.value}</div>
-            <div style={{ fontSize:"0.62rem", color: drilldown===card.id ? "#7eb8c9" : "#444", marginTop:4 }}>{drilldown===card.id ? "▲ fechar" : "ver detalhe →"}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Drilldown panel */}
-      {drilldown && (
-        <div style={{ background:"#0d0d11", border:`1px solid #2a2a3e`, borderRadius:10, padding:"20px 24px", marginBottom:28 }}>
-          <div style={{ fontSize:"0.67rem", color:"#7eb8c9", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:16 }}>
-            {drilldown === "mensal" ? "O que está a ser contabilizado · mensal" :
-             drilldown === "anual"  ? "O que está a ser contabilizado · anual" :
-             drilldown === "categorias" ? "Categorias com gastos registados" :
-             "Subscrições activas"}
-          </div>
-          {drillRows.length === 0 ? (
-            <div style={{ fontSize:"0.8rem", color:"#444" }}>Sem dados.</div>
-          ) : (
-            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-              {drillRows.map((row, i) => (
-                <div key={i} onClick={() => {
-                  if (row.type === "sub") onGoToSub(row.catId, row.subId);
-                  else if (row.type === "subscricao") onGoToSubscription();
-                  else if (row.type === "categoria") onGoToSub(row.catId, null);
-                  setDrilldown(null);
-                }}
-                  style={{ display:"flex", alignItems:"center", gap:14, padding:"9px 12px", borderRadius:7, background:SURFACE, cursor:"pointer", transition:"background .1s" }}
-                  onMouseEnter={e=>e.currentTarget.style.background="#1a1a1e"}
-                  onMouseLeave={e=>e.currentTarget.style.background=SURFACE}>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:"0.82rem", color:"#d0ccc4" }}>{row.label}</div>
-                    <div style={{ fontSize:"0.67rem", color:"#555", marginTop:2 }}>{row.sublabel}</div>
-                  </div>
-                  <div style={{ fontFamily:"Fraunces,serif", fontSize:"1rem", fontWeight:300, color:ACCENT }}>{fmt(row.value)}</div>
-                  <div style={{ fontSize:"0.7rem", color:"#444" }}>→</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {dashCat.length === 0 && (data.subscriptions||[]).length === 0 ? (
-        <div style={{ color:"#444", textAlign:"center", padding:60, fontSize:"0.85rem" }}>Adiciona faturas para ver o dashboard.</div>
-      ) : (
-        <>
-          <div className="dash-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
-            {[["Por categoria · mensal","mensal"],["Por categoria · anual","anual"]].map(([title,key])=>(
-              <div key={key} style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px 24px" }}>
-                <div style={{ fontSize:"0.67rem", color:MUTED, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:14 }}>{title}</div>
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie data={dashCat} dataKey={key} nameKey="name" cx="50%" cy="50%" outerRadius={85}
-                      label={({name,percent})=>`${name} ${(percent*100).toFixed(0)}%`} labelLine={false}>
-                      {dashCat.map((e,i)=><Cell key={i} fill={e.fill}/>)}
-                    </Pie>
-                    <Tooltip formatter={v=>fmt(v)} contentStyle={{ background:"#131317", border:`1px solid ${BORDER}`, borderRadius:6, fontSize:"0.76rem" }}/>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            ))}
-          </div>
-          <div style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px 24px", marginBottom:20 }}>
-            <div style={{ fontSize:"0.67rem", color:MUTED, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:14 }}>Categorias · mensal vs anual</div>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={dashCat} barGap={4}>
-                <XAxis dataKey="name" tick={{ fill:"#666", fontSize:11 }} axisLine={false} tickLine={false}/>
-                <YAxis tick={{ fill:"#555", fontSize:10 }} axisLine={false} tickLine={false} tickFormatter={v=>fmt(v)} width={85}/>
-                <Tooltip formatter={v=>fmt(v)} contentStyle={{ background:"#131317", border:`1px solid ${BORDER}`, borderRadius:6, fontSize:"0.76rem" }}/>
-                <Bar dataKey="mensal" name="Mensal" fill={ACCENT} radius={[4,4,0,0]}/>
-                <Bar dataKey="anual" name="Anual" fill="#7eb8c9" radius={[4,4,0,0]}/>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          {dashSub.length > 0 && (
-            <div style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"20px 24px" }}>
-              <div style={{ fontSize:"0.67rem", color:MUTED, letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:14 }}>Subcategorias · média mensal</div>
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={dashSub} barGap={4}>
-                  <XAxis dataKey="name" tick={{ fill:"#666", fontSize:10 }} axisLine={false} tickLine={false}/>
-                  <YAxis tick={{ fill:"#555", fontSize:10 }} axisLine={false} tickLine={false} tickFormatter={v=>fmt(v)} width={85}/>
-                  <Tooltip formatter={v=>fmt(v)} labelFormatter={(l,p)=>p?.[0]?`${p[0].payload.cat} › ${l}`:l} contentStyle={{ background:"#131317", border:`1px solid ${BORDER}`, borderRadius:6, fontSize:"0.76rem" }}/>
-                  <Bar dataKey="mensal" name="Média mensal" radius={[4,4,0,0]}>
-                    {dashSub.map((e,i)=><Cell key={i} fill={e.fill}/>)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
+function InfoChip({label,value}){return <div style={{background:"#0d0d0f",borderRadius:7,padding:"8px 12px"}}><div style={{fontSize:"0.6rem",color:MUTED,letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:3}}>{label}</div><div style={{fontSize:"0.8rem",color:ACCENT}}>{value||"—"}</div></div>;}
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 function App() {
-  const [data, setData] = useState(load);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Data
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
+  const [invoices, setInvoices] = useState([]);
+  const [contractDocs, setContractDocs] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [subscriptions, setSubscriptions] = useState([]);
+
+  // UI
   const [page, setPage] = useState("contracts");
-  const [activeCatId, setActiveCatId] = useState(() => load().categories[0]?.id || null);
+  const [activeCatId, setActiveCatId] = useState(null);
   const [activeSubId, setActiveSubId] = useState(null);
 
-  // modals
-  const [subModal, setSubModal]       = useState(null);
-  const [catModal, setCatModal]       = useState(null);
-  const [coModal, setCoModal]         = useState(null);
-  const [invModal, setInvModal]       = useState(null);
-  const [docModal, setDocModal]       = useState(null);
-  const [subscrModal, setSubscrModal] = useState(null); // {mode:'new'|'edit', id?}
+  // Modals
+  const [subModal, setSubModal] = useState(null);
+  const [catModal, setCatModal] = useState(null);
+  const [coModal, setCoModal] = useState(null);
+  const [invModal, setInvModal] = useState(null);
+  const [docModal, setDocModal] = useState(null);
+  const [subscModal, setSubscModal] = useState(null);
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   const pdfRef = useRef();
   const docFileRef = useRef();
-  const subscrFileRef = useRef();
+  const subscFileRef = useRef();
 
-  useEffect(() => { save(data); }, [data]);
-
+  // ── Load data ──────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!data.categories.find(c => c.id === activeCatId)) {
-      setActiveCatId(data.categories[0]?.id || null);
-      setActiveSubId(null);
-    }
-  }, [data.categories]);
+    window._authReady.then(async (prof) => {
+      setProfile(prof);
+      await loadAll(prof.id);
+      setLoading(false);
+    });
+  }, []);
 
-  const mut = fn => setData(d => { const nd = JSON.parse(JSON.stringify(d)); fn(nd); return nd; });
+  async function loadAll(ownerId) {
+    try {
+      const [cats, subs, invs, docs, cos, subscrs] = await Promise.all([
+        dbSelect('categories'),
+        dbSelect('subcategories'),
+        dbSelect('invoices'),
+        dbSelect('contract_docs'),
+        dbSelect('companies'),
+        dbSelect('subscriptions'),
+      ]);
+      setCategories(cats||[]);
+      setSubcategories(subs||[]);
+      setInvoices(invs||[]);
+      setContractDocs(docs||[]);
+      setCompanies(cos||[]);
+      setSubscriptions(subscrs||[]);
+      if(cats&&cats.length>0) setActiveCatId(cats[0].id);
 
-  // ── Confirm dialog ────────────────────────────────────────────────────────
-  const [confirmDialog, setConfirmDialog] = useState(null); // {message, onConfirm}
-  function ask(message, onConfirm) { setConfirmDialog({ message, onConfirm }); }
+      // Apply auto invoices
+      const newInvs=[];
+      for(const sub of (subs||[])){
+        if(!sub.fixed_value)continue;
+        const subInvs=(invs||[]).filter(i=>i.subcategory_id===sub.id);
+        const generated=generateFixedInvoices(sub,subInvs);
+        if(generated.length>0) newInvs.push(...generated);
+      }
+      if(newInvs.length>0){
+        await dbUpsert('invoices',newInvs);
+        setInvoices(prev=>[...prev,...newInvs]);
+      }
+    } catch(e){ console.error('loadAll',e); }
+  }
 
-  // ── Finders ───────────────────────────────────────────────────────────────
-  const activeCat = data.categories.find(c => c.id === activeCatId);
-  const activeSub = activeCat?.subs?.find(s => s.id === activeSubId);
-  const getSub = (catId, subId) => data.categories.find(c => c.id === catId)?.subs?.find(s => s.id === subId);
-  const getCompany = id => data.companies.find(c => c.id === id);
+  // ── Helpers ────────────────────────────────────────────────────────────────
+  function ask(msg, onConfirm){ setConfirmDialog({msg,onConfirm}); }
+  const subsForCat = catId => subcategories.filter(s=>s.category_id===catId);
+  const invForSub = subId => invoices.filter(i=>i.subcategory_id===subId);
+  const docsForSub = subId => contractDocs.filter(d=>d.subcategory_id===subId);
+  const catMonthly = catId => subsForCat(catId).reduce((s,sub)=>s+monthlyFromInvoices(invForSub(sub.id)),0);
+  const activeCat = categories.find(c=>c.id===activeCatId);
+  const activeSub = subcategories.find(s=>s.id===activeSubId);
+  const grandMonthly = useMemo(()=>{
+    const c=subcategories.reduce((s,sub)=>s+monthlyFromInvoices(invForSub(sub.id)),0);
+    const sc=subscriptions.reduce((s,sub)=>s+subMonthly(sub),0);
+    return c+sc;
+  },[subcategories,invoices,subscriptions]);
 
-  // ── Stats ─────────────────────────────────────────────────────────────────
-  const grandMonthly = useMemo(() => {
-    const contracts = data.categories.reduce((s, cat) =>
-      s + cat.subs.reduce((ss, sub) => ss + monthlyFromInvoices(sub.invoices), 0), 0);
-    const subscrs = (data.subscriptions || []).reduce((s, sub) => s + subMonthly(sub), 0);
-    return contracts + subscrs;
-  }, [data]);
+  // ── Category CRUD ──────────────────────────────────────────────────────────
+  const [catF, setCatF] = useState({name:"",icon:"",shared:false});
+  async function saveCat(){
+    if(!catF.name.trim())return;
+    const row={id:catModal.id||uid(),owner_id:profile.id,name:catF.name,icon:catF.icon||"◆",shared:catF.shared};
+    await dbUpsert('categories',[row]);
+    setCategories(prev=>catModal.id?prev.map(c=>c.id===catModal.id?{...c,...row}:c):[...prev,row]);
+    if(!catModal.id)setActiveCatId(row.id);
+    setCatModal(null);
+  }
+  async function deleteCat(id){
+    await dbDelete('categories',id);
+    setCategories(prev=>prev.filter(c=>c.id!==id));
+    setCatModal(null);
+  }
 
-  const catMonthly = catId => data.categories.find(c => c.id === catId)?.subs
-    .reduce((s, sub) => s + monthlyFromInvoices(sub.invoices), 0) || 0;
-
-  // ── Sub form ──────────────────────────────────────────────────────────────
-  const emptySF = { name:"", companyId:"", contractRef:"", joinDate:"", renewalDate:"", period:"Mensal", notes:"", fixedValue:false, fixedAmount:"", fixedDay:1, fixedPeriod:"Mensal" };
+  // ── Subcategory CRUD ───────────────────────────────────────────────────────
+  const emptySF={name:"",company_id:"",contract_ref:"",join_date:"",renewal_date:"",period:"Mensal",notes:"",shared:false,fixed_value:false,fixed_amount:"",fixed_day:1,fixed_period:"Mensal",fixed_month:""};
   const [sf, setSf] = useState(emptySF);
-
-  function openNewSub(catId) {
-    setSf(emptySF);
-    setSubModal({ mode:"new", catId });
-  }
-  function openEditSub(catId, sub) {
-    setSf({ name:sub.name, companyId:sub.companyId||"", contractRef:sub.contractRef||"", joinDate:sub.joinDate||"", renewalDate:sub.renewalDate||"", period:sub.period||"Mensal", notes:sub.notes||"", fixedValue:sub.fixedValue||false, fixedAmount:sub.fixedAmount||"", fixedDay:sub.fixedDay||1, fixedPeriod:sub.fixedPeriod||"Mensal" });
-    setSubModal({ mode:"edit", catId, subId:sub.id });
-  }
-  function openViewSub(catId, sub) {
-    setActiveCatId(catId);
-    setActiveSubId(sub.id);
-    setSubModal({ mode:"view", catId, subId:sub.id });
-  }
-  function saveSub() {
-    if (!sf.name.trim()) return;
-    if (subModal.mode === "edit") {
-      mut(d => {
-        const cat = d.categories.find(c => c.id === subModal.catId);
-        const sub2 = cat?.subs.find(s => s.id === subModal.subId);
-        if (sub2) {
-          const createdAt = sub2.createdAt; // preserve
-          Object.assign(sub2, sf);
-          sub2.createdAt = createdAt;
-          // if fixedValue was just turned off, remove auto invoices
-          if (!sf.fixedValue) sub2.invoices = (sub2.invoices||[]).filter(i => !i.auto);
-        }
-        applyAutoInvoices(d);
-      });
+  function openNewSub(catId){setSf({...emptySF,category_id:catId,shared:categories.find(c=>c.id===catId)?.shared||false});setSubModal({mode:"new"});}
+  function openEditSub(sub){setSf({name:sub.name,company_id:sub.company_id||"",contract_ref:sub.contract_ref||"",join_date:sub.join_date||"",renewal_date:sub.renewal_date||"",renewal_date:sub.renewal_date||"",period:sub.period||"Mensal",notes:sub.notes||"",shared:sub.shared||false,fixed_value:sub.fixed_value||false,fixed_amount:sub.fixed_amount||"",fixed_day:sub.fixed_day||1,fixed_period:sub.fixed_period||"Mensal",fixed_month:sub.fixed_month||"",category_id:sub.category_id});setSubModal({mode:"edit",id:sub.id});}
+  function openViewSub(sub){setActiveCatId(sub.category_id);setActiveSubId(sub.id);setSubModal({mode:"view",id:sub.id});}
+  async function saveSub(){
+    if(!sf.name.trim())return;
+    const isNew=subModal.mode==="new";
+    const id=isNew?uid():subModal.id;
+    const row={id,owner_id:profile.id,...sf,created_at_app:isNew?new Date().toISOString():(subcategories.find(s=>s.id===id)?.created_at_app||new Date().toISOString())};
+    await dbUpsert('subcategories',[row]);
+    if(isNew){
+      setSubcategories(prev=>[...prev,row]);
+      // generate auto invoices
+      const generated=generateFixedInvoices(row,[]);
+      if(generated.length>0){
+        await dbUpsert('invoices',generated);
+        setInvoices(prev=>[...prev,...generated]);
+      }
     } else {
-      mut(d => {
-        const cat = d.categories.find(c => c.id === subModal.catId);
-        if (cat) cat.subs.push({ ...emptySub(sf.name), ...sf, id: uid(), invoices:[], contractDocs:[], createdAt: new Date().toISOString() });
-        applyAutoInvoices(d);
-      });
+      setSubcategories(prev=>prev.map(s=>s.id===id?{...s,...row}:s));
+      if(!sf.fixed_value){
+        // remove auto invoices
+        const autoIds=invForSub(id).filter(i=>i.auto).map(i=>i.id);
+        for(const aid of autoIds){ await dbDelete('invoices',aid); }
+        setInvoices(prev=>prev.filter(i=>!(i.subcategory_id===id&&i.auto)));
+      } else {
+        const generated=generateFixedInvoices(row,invForSub(id));
+        if(generated.length>0){
+          await dbUpsert('invoices',generated);
+          setInvoices(prev=>[...prev,...generated]);
+        }
+      }
     }
     setSubModal(null);
   }
-  function deleteSub(catId, subId) {
-    ask("Eliminar subcategoria e todas as faturas?", () => {
-      mut(d => { const cat = d.categories.find(c => c.id === catId); if (cat) cat.subs = cat.subs.filter(s => s.id !== subId); });
-      setSubModal(null);
-      if (activeSubId === subId) setActiveSubId(null);
-    });
+  async function deleteSub(id){
+    await dbDelete('subcategories',id);
+    setSubcategories(prev=>prev.filter(s=>s.id!==id));
+    setInvoices(prev=>prev.filter(i=>i.subcategory_id!==id));
+    setContractDocs(prev=>prev.filter(d=>d.subcategory_id!==id));
+    if(activeSubId===id)setActiveSubId(null);
+    setSubModal(null);
   }
 
-  // ── Invoice form ──────────────────────────────────────────────────────────
-  const emptyInv = { dateFrom:"", dateTo:"", amount:"", notes:"", file:null, fileName:"" };
+  // ── Invoice CRUD ───────────────────────────────────────────────────────────
+  const emptyInv={date_from:"",date_to:"",amount:"",notes:"",file_name:"",file_data:""};
   const [invF, setInvF] = useState(emptyInv);
-
-  function openAddInvoice(catId, subId) {
-    setInvF(emptyInv);
-    setInvModal({ catId, subId, mode:"new" });
-  }
-  function openEditInvoice(catId, subId, inv) {
-    setInvF({ dateFrom:inv.dateFrom||"", dateTo:inv.dateTo||"", amount:inv.amount||"", notes:inv.notes||"", file:inv.file||null, fileName:inv.fileName||"" });
-    setInvModal({ catId, subId, mode:"edit", invId:inv.id });
-  }
-  function saveInvoice() {
-    if (!invF.amount && !invF.file) return;
-    if (invModal.mode === "edit") {
-      mut(d => {
-        const cat = d.categories.find(c => c.id === invModal.catId);
-        const sub = cat?.subs.find(s => s.id === invModal.subId);
-        const inv = sub?.invoices.find(i => i.id === invModal.invId);
-        if (inv) Object.assign(inv, invF);
-      });
-    } else {
-      mut(d => {
-        const cat = d.categories.find(c => c.id === invModal.catId);
-        const sub = cat?.subs.find(s => s.id === invModal.subId);
-        if (sub) sub.invoices.unshift({ id:uid(), ...invF });
-      });
-    }
+  function openAddInv(subId){setInvF({...emptyInv,subcategory_id:subId});setInvModal({mode:"new",subId});}
+  function openEditInv(inv){setInvF({date_from:inv.date_from||"",date_to:inv.date_to||"",amount:inv.amount||"",notes:inv.notes||"",file_name:inv.file_name||"",file_data:inv.file_data||""});setInvModal({mode:"edit",id:inv.id,subId:inv.subcategory_id});}
+  async function saveInv(){
+    if(!invF.amount&&!invF.file_data)return;
+    const id=invModal.mode==="new"?uid():invModal.id;
+    const row={id,subcategory_id:invModal.subId,owner_id:profile.id,...invF,auto:false};
+    await dbUpsert('invoices',[row]);
+    setInvoices(prev=>invModal.mode==="new"?[row,...prev]:prev.map(i=>i.id===id?{...i,...row}:i));
     setInvModal(null);
   }
-  function deleteInvoice(catId, subId, invId) {
-    ask("Eliminar fatura?", () => {
-      mut(d => {
-        const cat = d.categories.find(c => c.id === catId);
-        const sub = cat?.subs.find(s => s.id === subId);
-        if (sub) sub.invoices = sub.invoices.filter(i => i.id !== invId);
-      });
-      setInvModal(null);
-    });
+  async function deleteInv(id){
+    await dbDelete('invoices',id);
+    setInvoices(prev=>prev.filter(i=>i.id!==id));
+    setInvModal(null);
   }
 
-  // ── Contract doc form ────────────────────────────────────────────────────
-  const emptyDoc = { name:"", notes:"", file:null, fileName:"" };
+  // ── Contract doc CRUD ──────────────────────────────────────────────────────
+  const emptyDoc={name:"",notes:"",file_name:"",file_data:""};
   const [docF, setDocF] = useState(emptyDoc);
-
-  function openAddDoc(catId, subId) {
-    setDocF(emptyDoc);
-    setDocModal({ catId, subId, mode:"new" });
-  }
-  function openEditDoc(catId, subId, doc) {
-    setDocF({ name:doc.name||"", notes:doc.notes||"", file:doc.file||null, fileName:doc.fileName||"" });
-    setDocModal({ catId, subId, mode:"edit", docId:doc.id });
-  }
-  function saveDoc() {
-    if (!docF.fileName && !docF.name.trim()) return;
-    if (docModal.mode === "edit") {
-      mut(d => {
-        const cat = d.categories.find(c => c.id === docModal.catId);
-        const sub = cat?.subs.find(s => s.id === docModal.subId);
-        const doc = sub?.contractDocs?.find(doc => doc.id === docModal.docId);
-        if (doc) Object.assign(doc, docF);
-      });
-    } else {
-      mut(d => {
-        const cat = d.categories.find(c => c.id === docModal.catId);
-        const sub = cat?.subs.find(s => s.id === docModal.subId);
-        if (sub) {
-          if (!sub.contractDocs) sub.contractDocs = [];
-          sub.contractDocs.unshift({ id:uid(), ...docF });
-        }
-      });
-    }
+  function openAddDoc(subId){setDocF({...emptyDoc});setDocModal({mode:"new",subId});}
+  function openEditDoc(doc){setDocF({name:doc.name||"",notes:doc.notes||"",file_name:doc.file_name||"",file_data:doc.file_data||""});setDocModal({mode:"edit",id:doc.id,subId:doc.subcategory_id});}
+  async function saveDoc(){
+    if(!docF.name.trim()&&!docF.file_data)return;
+    const id=docModal.mode==="new"?uid():docModal.id;
+    const row={id,subcategory_id:docModal.subId,owner_id:profile.id,...docF};
+    await dbUpsert('contract_docs',[row]);
+    setContractDocs(prev=>docModal.mode==="new"?[row,...prev]:prev.map(d=>d.id===id?{...d,...row}:d));
     setDocModal(null);
   }
-  function deleteDoc(catId, subId, docId) {
-    ask("Eliminar documento?", () => {
-      mut(d => {
-        const cat = d.categories.find(c => c.id === catId);
-        const sub = cat?.subs.find(s => s.id === subId);
-        if (sub) sub.contractDocs = (sub.contractDocs||[]).filter(doc => doc.id !== docId);
-      });
-      setDocModal(null);
-    });
+  async function deleteDoc(id){
+    await dbDelete('contract_docs',id);
+    setContractDocs(prev=>prev.filter(d=>d.id!==id));
+    setDocModal(null);
   }
-  const emptyCo = { name:"", nif:"", contact:"", website:"", notes:"" };
+
+  // ── Company CRUD ───────────────────────────────────────────────────────────
+  const emptyCo={name:"",nif:"",contact:"",website:"",notes:"",shared:true};
   const [coF, setCoF] = useState(emptyCo);
-  function saveCompany() {
-    if (!coF.name.trim()) return;
-    if (coModal.mode === "edit") {
-      mut(d => { const i = d.companies.findIndex(c => c.id === coModal.id); if (i>=0) d.companies[i] = { ...d.companies[i], ...coF }; });
-    } else {
-      mut(d => d.companies.push({ id:uid(), ...coF }));
-    }
+  async function saveCo(){
+    if(!coF.name.trim())return;
+    const id=coModal.id||uid();
+    const row={id,owner_id:profile.id,...coF};
+    await dbUpsert('companies',[row]);
+    setCompanies(prev=>coModal.id?prev.map(c=>c.id===id?{...c,...row}:c):[...prev,row]);
     setCoModal(null);
   }
-  function deleteCompany(id) {
-    ask("Eliminar empresa?", () => {
-      mut(d => { d.companies = d.companies.filter(c => c.id !== id); });
-      setCoModal(null);
-    });
+  async function deleteCo(id){
+    await dbDelete('companies',id);
+    setCompanies(prev=>prev.filter(c=>c.id!==id));
+    setCoModal(null);
   }
 
-  // ── Category form ─────────────────────────────────────────────────────────
-  const [catF, setCatF] = useState({ name:"", icon:"" });
-  function saveCat() {
-    if (!catF.name.trim()) return;
-    if (catModal.mode === "edit") {
-      mut(d => { const c = d.categories.find(c => c.id === catModal.catId); if (c) { c.name = catF.name; c.icon = catF.icon; }});
-    } else {
-      const id = uid();
-      mut(d => d.categories.push({ id, name:catF.name, icon:catF.icon||"◆", subs:[] }));
-      setActiveCatId(id);
-    }
-    setCatModal(null);
-  }
-  function deleteCat(id) {
-    ask("Eliminar categoria e tudo dentro?", () => {
-      mut(d => { d.categories = d.categories.filter(c => c.id !== id); });
-      setCatModal(null);
-    });
-  }
-
-  // ── Subscription form ─────────────────────────────────────────────────────
-  const emptySubsc = { name:"", value:"", period:"Mensal", renewalDay:"", renewalMonth:"", file:null, fileName:"" };
+  // ── Subscription CRUD ──────────────────────────────────────────────────────
+  const emptySubsc={name:"",value:"",period:"Mensal",renewal_day:"",renewal_month:"",file_name:"",file_data:"",shared:false};
   const [subscF, setSubscF] = useState(emptySubsc);
-  const [subscModal, setSubscModal] = useState(null); // {mode:'new'|'edit', id?}
-  const subscFileRef = useRef();
-
-  function openNewSubscription() { setSubscF(emptySubsc); setSubscModal({ mode:"new" }); }
-  function openEditSubscription(s) {
-    setSubscF({ name:s.name, value:s.value, period:s.period, renewalDay:s.renewalDay||"", renewalMonth:s.renewalMonth||"", file:s.file||null, fileName:s.fileName||"" });
-    setSubscModal({ mode:"edit", id:s.id });
-  }
-  function saveSubscription() {
-    if (!subscF.name.trim()) return;
-    if (subscModal.mode === "edit") {
-      mut(d => { const i = (d.subscriptions||[]).findIndex(s => s.id === subscModal.id); if (i>=0) d.subscriptions[i] = { ...d.subscriptions[i], ...subscF }; });
-    } else {
-      mut(d => { if (!d.subscriptions) d.subscriptions = []; d.subscriptions.push({ id:uid(), ...subscF }); });
-    }
+  async function saveSubsc(){
+    if(!subscF.name.trim())return;
+    const id=subscModal.id||uid();
+    const row={id,owner_id:profile.id,...subscF};
+    await dbUpsert('subscriptions',[row]);
+    setSubscriptions(prev=>subscModal.id?prev.map(s=>s.id===id?{...s,...row}:s):[...prev,row]);
     setSubscModal(null);
   }
-  function deleteSubscription(id) {
-    ask("Eliminar subscrição?", () => {
-      mut(d => { d.subscriptions = (d.subscriptions||[]).filter(s => s.id !== id); });
-      setSubscModal(null);
-    });
+  async function deleteSubsc(id){
+    await dbDelete('subscriptions',id);
+    setSubscriptions(prev=>prev.filter(s=>s.id!==id));
+    setSubscModal(null);
   }
 
-  // ── Dashboard data ────────────────────────────────────────────────────────
-  const dashCat = data.categories.map((cat, i) => ({
-    name: cat.name, fill: CHART_COLORS[i % CHART_COLORS.length],
-    mensal: parseFloat(catMonthly(cat.id).toFixed(2)),
-    anual:  parseFloat((catMonthly(cat.id) * 12).toFixed(2)),
-  })).filter(d => d.mensal > 0);
+  // ── Dashboard data ─────────────────────────────────────────────────────────
+  const dashCat = useMemo(()=>categories.map((cat,i)=>({
+    name:cat.name,fill:CHART_COLORS[i%CHART_COLORS.length],
+    mensal:parseFloat(catMonthly(cat.id).toFixed(2)),
+    anual:parseFloat((catMonthly(cat.id)*12).toFixed(2))
+  })).filter(d=>d.mensal>0),[categories,subcategories,invoices]);
 
-  const dashSub = useMemo(() => {
-    const rows = [];
-    data.categories.forEach((cat, ci) => cat.subs.forEach((sub, si) => {
-      const m = monthlyFromInvoices(sub.invoices);
-      if (m > 0) rows.push({ name: sub.name, cat: cat.name, mensal: parseFloat(m.toFixed(2)), anual: parseFloat((m*12).toFixed(2)), fill: CHART_COLORS[(ci*4+si) % CHART_COLORS.length] });
+  const dashSub = useMemo(()=>{
+    const rows=[];
+    categories.forEach((cat,ci)=>subsForCat(cat.id).forEach((sub,si)=>{
+      const m=monthlyFromInvoices(invForSub(sub.id));
+      if(m>0)rows.push({name:sub.name,cat:cat.name,mensal:parseFloat(m.toFixed(2)),fill:CHART_COLORS[(ci*4+si)%CHART_COLORS.length]});
     }));
     return rows;
-  }, [data]);
+  },[categories,subcategories,invoices]);
 
-  // ── Sub detail (view mode) ────────────────────────────────────────────────
-  const viewSub = subModal?.mode === "view" ? data.categories.find(c => c.id === subModal.catId)?.subs.find(s => s.id === subModal.subId) : null;
-  const viewCo  = viewSub ? getCompany(viewSub.companyId) : null;
-  const invModalSub = invModal ? data.categories.find(c => c.id === invModal.catId)?.subs.find(s => s.id === invModal.subId) : null;
+  // ── Dashboard drilldown ───────────────────────────────────────────────────
+  const [drilldown, setDrilldown] = useState(null);
+  const drillRows = useMemo(()=>{
+    if(!drilldown)return[];
+    if(drilldown==="mensal"||drilldown==="anual"){
+      const rows=[];
+      categories.forEach(cat=>subsForCat(cat.id).forEach(sub=>{
+        const m=monthlyFromInvoices(invForSub(sub.id));
+        if(m>0)rows.push({label:sub.name,sublabel:cat.name,value:drilldown==="anual"?m*12:m,sub,type:"sub"});
+      }));
+      subscriptions.forEach(sub=>{const m=subMonthly(sub);if(m>0)rows.push({label:sub.name,sublabel:"Subscrição",value:drilldown==="anual"?m*12:m,sub,type:"subscricao"});});
+      return rows.sort((a,b)=>b.value-a.value);
+    }
+    if(drilldown==="categorias")return categories.map(cat=>({label:cat.name,sublabel:`${subsForCat(cat.id).length} subcategorias`,value:catMonthly(cat.id),cat,type:"categoria"})).filter(r=>r.value>0).sort((a,b)=>b.value-a.value);
+    if(drilldown==="subscricoes")return subscriptions.map(sub=>({label:sub.name,sublabel:sub.period,value:subMonthly(sub),sub,type:"subscricao"})).sort((a,b)=>b.value-a.value);
+    return[];
+  },[drilldown,categories,subcategories,invoices,subscriptions]);
 
-  // ─────────────────────────────────────────────────────────────────────────
+  const viewSub = subModal?.id ? subcategories.find(s=>s.id===subModal.id) : null;
+  const viewCo = viewSub ? companies.find(c=>c.id===viewSub.company_id) : null;
+
+  if(loading) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",color:MUTED,fontSize:"0.85rem"}}>A carregar...</div>;
+
   return (
-    <div style={{ minHeight:"100vh", background:BG, color:"#e8e4dc", fontFamily:"'DM Mono','Courier New',monospace" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,wght@0,300;0,700;1,300&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0}
-        ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:#0d0d0f}::-webkit-scrollbar-thumb{background:#2a2a2e}
-        input,textarea,select{font-family:'DM Mono',monospace;background:#16161a;border:1px solid #2a2a2e;color:#e8e4dc;border-radius:6px;padding:8px 12px;font-size:0.82rem;width:100%;outline:none;transition:border .2s}
-        input:focus,textarea:focus,select:focus{border-color:${ACCENT}}
-        select option{background:#16161a}
-        button{cursor:pointer;font-family:'DM Mono',monospace}
-        .rh:hover{background:#1a1a1e!important}
-        /* Mobile tab bar */
-        .tab-bar{display:none;position:fixed;bottom:0;left:0;right:0;z-index:200;background:#0d0d0f;border-top:1px solid #1e1e24;padding-bottom:env(safe-area-inset-bottom)}
-        .tab-bar button{flex:1;background:transparent;border:none;padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:0.55rem;letter-spacing:0.04em;color:#555;transition:color .15s}
-        .tab-bar button.active{color:#c8b89a}
-        .tab-bar button svg{width:22px;height:22px;stroke-width:1.5}
-        @media(max-width:768px){
-          .tab-bar{display:flex}
-          .desktop-nav{display:none!important}
-          .desktop-sidebar{display:none!important}
-          .page-content{padding:16px!important}
-          .page-content-contracts{padding:16px!important}
-          .card-grid{grid-template-columns:1fr!important}
-          .dash-grid{grid-template-columns:1fr!important}
-          .dash-cards{grid-template-columns:1fr 1fr!important}
-          .info-grid{grid-template-columns:1fr 1fr!important}
-          .mobile-full{max-width:100%!important;max-height:100%!important;height:100%!important;border-radius:0!important;padding:20px 16px!important}
-          .mobile-overlay{align-items:flex-end!important;padding:0!important}
-          .form-grid{grid-template-columns:1fr!important}
-          .bottom-pad{padding-bottom:80px!important}
-          .cat-header{font-size:1.4rem!important}
-          .stat-sub{font-size:0.65rem!important}
-        }
-      `}</style>
+    <div style={{minHeight:"100vh",background:BG,color:"#e8e4dc",fontFamily:"'DM Mono','Courier New',monospace"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Fraunces:ital,wght@0,300;0,700;1,300&display=swap');`}</style>
 
-      {/* Desktop Nav */}
-      <nav className="desktop-nav" style={{ borderBottom:`1px solid ${BORDER}`, padding:"0 32px", display:"flex", alignItems:"center" }}>
-        <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.25rem", fontWeight:300, paddingRight:28, paddingTop:15, paddingBottom:15, borderRight:`1px solid ${BORDER}`, marginRight:4 }}>
-          Contratos
-        </div>
-        {[["contracts","Visão Geral"],["subscriptions","Subscrições"],["dashboard","Dashboard"],["companies","Empresas"],["settings","Categorias"]].map(([id,label]) => (
-          <button key={id} onClick={() => setPage(id)} style={{
-            background:"transparent", border:"none", color: page===id ? ACCENT : "#555",
-            padding:"15px 18px", fontSize:"0.76rem", letterSpacing:"0.05em",
-            borderBottom: page===id ? `2px solid ${ACCENT}` : "2px solid transparent",
-          }}>{label}</button>
+      {/* Desktop nav */}
+      <nav className="desk-nav" style={{borderBottom:`1px solid ${BORDER}`,padding:"0 32px",display:"flex",alignItems:"center"}}>
+        <div style={{fontFamily:"Fraunces,serif",fontSize:"1.25rem",fontWeight:300,paddingRight:28,paddingTop:15,paddingBottom:15,borderRight:`1px solid ${BORDER}`,marginRight:4}}>Contratos</div>
+        {[["contracts","Visão Geral"],["subscriptions","Subscrições"],["dashboard","Dashboard"],["companies","Empresas"],["settings","Categorias"]].map(([id,label])=>(
+          <button key={id} onClick={()=>setPage(id)} style={{background:"transparent",border:"none",color:page===id?ACCENT:"#555",padding:"15px 18px",fontSize:"0.76rem",letterSpacing:"0.05em",borderBottom:page===id?`2px solid ${ACCENT}`:"2px solid transparent"}}>{label}</button>
         ))}
-        <div style={{ marginLeft:"auto", fontSize:"0.7rem", color:"#444" }}>
-          {fmt(grandMonthly)}<span style={{ color:"#2a2a2e" }}>/mês</span>
+        <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:12}}>
+          <span style={{fontSize:"0.7rem",color:ACCENT}}>{fmt(grandMonthly)}<span style={{color:"#333"}}>/mês</span></span>
+          <span style={{fontSize:"0.68rem",color:"#444"}}>{profile?.name||profile?.email}</span>
         </div>
       </nav>
 
-      {/* Mobile Header */}
-      <div style={{ display:"none" }} className="mobile-header-placeholder" />
-      <style>{`@media(max-width:768px){.mobile-top-bar{display:flex!important}}`}</style>
-      <div className="mobile-top-bar" style={{ display:"none", borderBottom:`1px solid ${BORDER}`, padding:"12px 16px", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, background:BG, zIndex:100 }}>
-        <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.1rem", fontWeight:300, color:"#e8e4dc" }}>Contratos</div>
-        <div style={{ fontSize:"0.72rem", color:ACCENT }}>{fmt(grandMonthly)}<span style={{ color:"#444" }}>/mês</span></div>
+      {/* Mobile top bar */}
+      <div className="mob-top" style={{display:"none",borderBottom:`1px solid ${BORDER}`,padding:"12px 16px",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,background:BG,zIndex:100}}>
+        <div style={{fontFamily:"Fraunces,serif",fontSize:"1.1rem",fontWeight:300}}>Contratos</div>
+        <div style={{fontSize:"0.72rem",color:ACCENT}}>{fmt(grandMonthly)}<span style={{color:"#444"}}>/mês</span></div>
       </div>
 
-      {/* Mobile Tab Bar */}
+      {/* Mobile tab bar */}
       <div className="tab-bar">
         {[
-          ["contracts", "Visão Geral", <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>],
-          ["subscriptions", "Subscrições", <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.31-8.86c-1.77-.45-2.34-.94-2.34-1.67 0-.84.79-1.43 2.1-1.43 1.38 0 1.9.66 1.94 1.64h1.71c-.05-1.34-.87-2.57-2.49-2.97V5H10.9v1.69c-1.51.32-2.72 1.3-2.72 2.81 0 1.79 1.49 2.69 3.66 3.21 1.95.46 2.34 1.15 2.34 1.87 0 .53-.39 1.39-2.1 1.39-1.6 0-2.23-.72-2.32-1.64H8.04c.1 1.7 1.36 2.66 2.86 2.97V19h2.34v-1.67c1.52-.29 2.72-1.16 2.73-2.77-.01-2.2-1.9-2.96-3.66-3.42z"/></svg>],
-          ["dashboard", "Dashboard", <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>],
-          ["companies", "Empresas", <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>],
-          ["settings", "Categorias", <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>],
-        ].map(([id, label, icon]) => (
-          <button key={id} className={page===id ? "active" : ""} onClick={() => setPage(id)}>
-            {icon}{label}
-          </button>
+          ["contracts","Início",<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>],
+          ["subscriptions","Subscrições",<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M14.8 9A2 2 0 0 0 13 8h-2a2 2 0 0 0 0 4h2a2 2 0 0 1 0 4h-2a2 2 0 0 1-1.8-1M12 7v1m0 8v1"/></svg>],
+          ["dashboard","Dashboard",<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>],
+          ["companies","Empresas",<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>],
+          ["settings","Categorias",<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>],
+        ].map(([id,label,icon])=>(
+          <button key={id} className={page===id?"active":""} onClick={()=>setPage(id)}>{icon}{label}</button>
         ))}
       </div>
 
-      {/* ── Contracts page ── */}
-      {page === "contracts" && (
-        <div style={{ display:"flex", minHeight:"calc(100vh - 52px)" }}>
-          {/* Sidebar - desktop only */}
-          <aside className="desktop-sidebar" style={{ width:230, borderRight:`1px solid ${BORDER}`, padding:"16px 0", flexShrink:0 }}>
-            {data.categories.map(cat => (
+      {/* ── Contracts ── */}
+      {page==="contracts" && (
+        <div style={{display:"flex",minHeight:"calc(100vh - 52px)"}}>
+          <aside className="desk-aside" style={{width:230,borderRight:`1px solid ${BORDER}`,padding:"16px 0",flexShrink:0}}>
+            {categories.map(cat=>(
               <div key={cat.id}>
-                <div onClick={() => { setActiveCatId(cat.id); setActiveSubId(null); }}
-                  className="rh" style={{
-                    padding:"8px 18px", cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center",
-                    background: activeCatId===cat.id && !activeSubId ? "#1a1a1e" : "transparent",
-                    color: activeCatId===cat.id && !activeSubId ? "#e8e4dc" : "#777",
-                    fontSize:"0.8rem",
-                  }}>
+                <div onClick={()=>{setActiveCatId(cat.id);setActiveSubId(null);}} className="rh"
+                  style={{padding:"8px 18px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",background:activeCatId===cat.id&&!activeSubId?"#1a1a1e":"transparent",color:activeCatId===cat.id&&!activeSubId?"#e8e4dc":"#777",fontSize:"0.8rem"}}>
                   <span>{cat.icon} {cat.name}</span>
-                  <span style={{ fontSize:"0.65rem", color: catMonthly(cat.id)>0 ? ACCENT : "#333" }}>{fmt(catMonthly(cat.id))}</span>
+                  <span style={{fontSize:"0.65rem",color:catMonthly(cat.id)>0?ACCENT:"#333"}}>{fmt(catMonthly(cat.id))}</span>
                 </div>
-                {cat.subs.map(sub => {
-                  const m = monthlyFromInvoices(sub.invoices);
-                  return (
-                    <div key={sub.id} onClick={() => openViewSub(cat.id, sub)}
-                      className="rh" style={{
-                        padding:"6px 18px 6px 34px", cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center",
-                        background: activeSubId===sub.id ? "#1a1a1e" : "transparent",
-                        color: activeSubId===sub.id ? "#d0ccc4" : "#555",
-                        fontSize:"0.74rem",
-                      }}>
-                      <span>{sub.name}</span>
-                      {m > 0 && <span style={{ fontSize:"0.62rem", color:"#666" }}>{fmt(m)}</span>}
-                    </div>
-                  );
-                })}
+                {subsForCat(cat.id).map(sub=>(
+                  <div key={sub.id} onClick={()=>openViewSub(sub)} className="rh"
+                    style={{padding:"6px 18px 6px 34px",cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center",background:activeSubId===sub.id?"#1a1a1e":"transparent",color:activeSubId===sub.id?"#d0ccc4":"#555",fontSize:"0.74rem"}}>
+                    <span>{sub.name}</span>
+                    {monthlyFromInvoices(invForSub(sub.id))>0&&<span style={{fontSize:"0.62rem",color:"#666"}}>{fmt(monthlyFromInvoices(invForSub(sub.id)))}</span>}
+                  </div>
+                ))}
               </div>
             ))}
           </aside>
 
-          {/* Main area */}
-          <main className="bottom-pad" style={{ flex:1, padding:"28px 36px", overflowY:"auto" }}>
-            {/* Mobile: category selector */}
-            <div style={{ display:"none" }} className="mobile-cat-nav-placeholder" />
-            <style>{`@media(max-width:768px){.mobile-cat-select{display:flex!important}}`}</style>
-            <div className="mobile-cat-select" style={{ display:"none", gap:8, overflowX:"auto", paddingBottom:8, marginBottom:16, scrollbarWidth:"none" }}>
-              {data.categories.map(cat => (
-                <button key={cat.id} onClick={() => { setActiveCatId(cat.id); setActiveSubId(null); }}
-                  style={{ flexShrink:0, background: activeCatId===cat.id ? ACCENT : "#131317", color: activeCatId===cat.id ? BG : "#777", border:`1px solid ${activeCatId===cat.id ? ACCENT : BORDER}`, borderRadius:20, padding:"6px 14px", fontSize:"0.75rem", whiteSpace:"nowrap" }}>
+          <main className="main-area" style={{flex:1,padding:"28px 36px",overflowY:"auto"}}>
+            {/* Mobile category chips */}
+            <div style={{display:"none"}} /><style>{`@media(max-width:768px){.mob-cats{display:flex!important}}`}</style>
+            <div className="mob-cats" style={{display:"none",gap:8,overflowX:"auto",paddingBottom:8,marginBottom:16,scrollbarWidth:"none"}}>
+              {categories.map(cat=>(
+                <button key={cat.id} onClick={()=>{setActiveCatId(cat.id);setActiveSubId(null);}}
+                  style={{flexShrink:0,background:activeCatId===cat.id?ACCENT:"#131317",color:activeCatId===cat.id?BG:"#777",border:`1px solid ${activeCatId===cat.id?ACCENT:BORDER}`,borderRadius:20,padding:"6px 14px",fontSize:"0.75rem",whiteSpace:"nowrap"}}>
                   {cat.icon} {cat.name}
                 </button>
               ))}
             </div>
 
-            {!activeCat ? (
-              <div style={{ color:"#444", fontSize:"0.85rem" }}>Selecciona uma categoria</div>
-            ) : !activeSubId ? (
+            {!activeCat ? <div style={{color:"#444",fontSize:"0.85rem"}}>Selecciona uma categoria</div> : (
               <>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:24 }}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:24}}>
                   <div>
-                    <div className="cat-header" style={{ fontFamily:"Fraunces,serif", fontSize:"1.8rem", fontWeight:300, color:ACCENT }}>{fmt(catMonthly(activeCatId))}</div>
-                    <div className="stat-sub" style={{ fontSize:"0.7rem", color:MUTED, marginTop:2 }}>{fmt(catMonthly(activeCatId)*12)} / ano · {activeCat.subs.length} subcategorias</div>
+                    <div style={{fontFamily:"Fraunces,serif",fontSize:"1.8rem",fontWeight:300,color:ACCENT}}>{fmt(catMonthly(activeCatId))}</div>
+                    <div style={{fontSize:"0.7rem",color:MUTED,marginTop:2}}>{fmt(catMonthly(activeCatId)*12)} / ano · {subsForCat(activeCatId).length} subcategorias · <SharedBadge shared={activeCat.shared}/></div>
                   </div>
-                  <Btn onClick={() => openNewSub(activeCatId)} v="primary">+ subcategoria</Btn>
+                  <Btn onClick={()=>openNewSub(activeCatId)} v="primary">+ subcategoria</Btn>
                 </div>
-                <div className="card-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:12 }}>
-                  {activeCat.subs.map(sub => {
-                    const co = getCompany(sub.companyId);
-                    const m = monthlyFromInvoices(sub.invoices);
-                    return (
-                      <div key={sub.id} onClick={() => openViewSub(activeCatId, sub)}
-                        style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"16px 18px", cursor:"pointer", transition:"border-color .15s, transform .15s" }}
+                <div className="card-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:12}}>
+                  {subsForCat(activeCatId).map(sub=>{
+                    const co=companies.find(c=>c.id===sub.company_id);
+                    const m=monthlyFromInvoices(invForSub(sub.id));
+                    return(
+                      <div key={sub.id} onClick={()=>openViewSub(sub)}
+                        style={{background:SURFACE,border:`1px solid ${BORDER}`,borderRadius:10,padding:"16px 18px",cursor:"pointer",transition:"border-color .15s,transform .15s"}}
                         onMouseEnter={e=>{e.currentTarget.style.borderColor="#3a3a3e";e.currentTarget.style.transform="translateY(-1px)"}}
                         onMouseLeave={e=>{e.currentTarget.style.borderColor=BORDER;e.currentTarget.style.transform=""}}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
-                          <div style={{ fontFamily:"Fraunces,serif", fontSize:"1rem", fontWeight:300 }}>{sub.name}</div>
-                          <RenewalBadge date={sub.renewalDate} />
+                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                          <div style={{fontFamily:"Fraunces,serif",fontSize:"1rem",fontWeight:300}}>{sub.name}</div>
+                          <RenewalBadge date={sub.renewal_date}/>
                         </div>
-                        <div style={{ fontSize:"0.7rem", color:"#666", marginBottom:10 }}>{co?.name || "Sem empresa"}</div>
-                        <div style={{ display:"flex", alignItems:"baseline", gap:6 }}>
-                          <span style={{ fontFamily:"Fraunces,serif", fontSize:"1.2rem", fontWeight:300, color: m>0 ? ACCENT : "#444" }}>{m > 0 ? fmt(m) : "—"}</span>
-                          {m > 0 && <span style={{ fontSize:"0.65rem", color:MUTED }}>/ mês (média)</span>}
+                        <div style={{fontSize:"0.7rem",color:"#666",marginBottom:10,display:"flex",gap:6,alignItems:"center"}}>
+                          {co?.name||"Sem empresa"} <SharedBadge shared={sub.shared}/>
                         </div>
-                        <div style={{ marginTop:6, fontSize:"0.65rem", color:"#444" }}>{sub.invoices.length} {sub.invoices.length===1?"fatura":"faturas"}</div>
+                        <div style={{display:"flex",alignItems:"baseline",gap:6}}>
+                          <span style={{fontFamily:"Fraunces,serif",fontSize:"1.2rem",fontWeight:300,color:m>0?ACCENT:"#444"}}>{m>0?fmt(m):"—"}</span>
+                          {m>0&&<span style={{fontSize:"0.65rem",color:MUTED}}>/ mês (média)</span>}
+                        </div>
+                        <div style={{marginTop:6,fontSize:"0.65rem",color:"#444"}}>{invForSub(sub.id).length} faturas</div>
                       </div>
                     );
                   })}
                 </div>
               </>
-            ) : null}
+            )}
           </main>
         </div>
       )}
 
-      {/* ── Subscriptions page ── */}
-      {page === "subscriptions" && (
-        <div className="bottom-pad page-content" style={{ padding:"32px 40px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:24 }}>
+      {/* ── Subscriptions ── */}
+      {page==="subscriptions" && (
+        <div className="pg" style={{padding:"32px 40px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",marginBottom:24}}>
             <div>
-              <span style={{ fontFamily:"Fraunces,serif", fontSize:"1.8rem", fontWeight:300, color:ACCENT }}>
-                {fmt((data.subscriptions||[]).reduce((s,sub)=>s+subMonthly(sub),0))}
-              </span>
-              <span style={{ fontSize:"0.7rem", color:MUTED, marginLeft:8 }}>
-                / mês · {fmt((data.subscriptions||[]).reduce((s,sub)=>s+subMonthly(sub),0)*12)} / ano · {(data.subscriptions||[]).length} subscrições
-              </span>
+              <span style={{fontFamily:"Fraunces,serif",fontSize:"1.8rem",fontWeight:300,color:ACCENT}}>{fmt(subscriptions.reduce((s,sub)=>s+subMonthly(sub),0))}</span>
+              <span style={{fontSize:"0.7rem",color:MUTED,marginLeft:8}}>/ mês · {subscriptions.length} subscrições</span>
             </div>
-            <Btn onClick={openNewSubscription} v="primary">+ nova subscrição</Btn>
+            <Btn onClick={()=>{setSubscF(emptySubsc);setSubscModal({mode:"new"});}} v="primary">+ nova</Btn>
           </div>
-          <div className="card-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:12 }}>
-            {(data.subscriptions||[]).map(sub => {
-              const nextDate = subRenewalDate(sub);
-              return (
-                <div key={sub.id} onClick={() => openEditSubscription(sub)}
-                  style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"16px 18px", cursor:"pointer", transition:"border-color .15s, transform .15s" }}
-                  onMouseEnter={e=>{e.currentTarget.style.borderColor="#3a3a3e";e.currentTarget.style.transform="translateY(-1px)"}}
-                  onMouseLeave={e=>{e.currentTarget.style.borderColor=BORDER;e.currentTarget.style.transform=""}}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
-                    <div style={{ fontFamily:"Fraunces,serif", fontSize:"1rem", fontWeight:300 }}>{sub.name}</div>
-                    <RenewalBadge date={nextDate} />
-                  </div>
-                  <div style={{ display:"flex", alignItems:"baseline", gap:6, marginBottom:6 }}>
-                    <span style={{ fontFamily:"Fraunces,serif", fontSize:"1.25rem", fontWeight:300, color:ACCENT }}>{fmt(sub.value)}</span>
-                    <span style={{ fontSize:"0.65rem", color:MUTED }}>{sub.period === "Anual" ? "/ ano" : "/ mês"}</span>
-                  </div>
-                  <div style={{ fontSize:"0.68rem", color:"#555" }}>
-                    {sub.period === "Anual"
-                      ? sub.renewalDay && sub.renewalMonth ? `renova dia ${sub.renewalDay}/${sub.renewalMonth}` : "data não definida"
-                      : sub.renewalDay ? `renova dia ${sub.renewalDay} de cada mês` : "dia não definido"
-                    }
-                  </div>
-                  {sub.period === "Anual" && (
-                    <div style={{ fontSize:"0.65rem", color:"#444", marginTop:4 }}>{fmt(subMonthly(sub))} / mês (média)</div>
-                  )}
-                  {sub.fileName && <div style={{ fontSize:"0.65rem", color:"#555", marginTop:6 }}>📎 {sub.fileName}</div>}
+          <div className="card-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:12}}>
+            {subscriptions.map(sub=>(
+              <div key={sub.id} onClick={()=>{setSubscF({name:sub.name,value:sub.value,period:sub.period,renewal_day:sub.renewal_day||"",renewal_month:sub.renewal_month||"",file_name:sub.file_name||"",file_data:sub.file_data||"",shared:sub.shared||false});setSubscModal({mode:"edit",id:sub.id});}}
+                style={{background:SURFACE,border:`1px solid ${BORDER}`,borderRadius:10,padding:"16px 18px",cursor:"pointer",transition:"border-color .15s,transform .15s"}}
+                onMouseEnter={e=>{e.currentTarget.style.borderColor="#3a3a3e";e.currentTarget.style.transform="translateY(-1px)"}}
+                onMouseLeave={e=>{e.currentTarget.style.borderColor=BORDER;e.currentTarget.style.transform=""}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:8}}>
+                  <div style={{fontFamily:"Fraunces,serif",fontSize:"1rem",fontWeight:300}}>{sub.name}</div>
+                  <RenewalBadge date={subRenewalDate(sub)}/>
                 </div>
-              );
-            })}
-            {(data.subscriptions||[]).length === 0 && (
-              <div style={{ color:"#444", fontSize:"0.82rem", padding:"20px 0" }}>Nenhuma subscrição ainda.</div>
-            )}
+                <div style={{display:"flex",alignItems:"baseline",gap:6,marginBottom:4}}>
+                  <span style={{fontFamily:"Fraunces,serif",fontSize:"1.2rem",fontWeight:300,color:ACCENT}}>{fmt(sub.value)}</span>
+                  <span style={{fontSize:"0.65rem",color:MUTED}}>{sub.period==="Anual"?"/ ano":"/ mês"}</span>
+                </div>
+                <div style={{fontSize:"0.68rem",color:"#555",display:"flex",gap:6,alignItems:"center"}}>
+                  {sub.period==="Anual"?sub.renewal_day&&sub.renewal_month?`renova dia ${sub.renewal_day}/${sub.renewal_month}`:"data não definida":sub.renewal_day?`renova dia ${sub.renewal_day}`:"dia não definido"}
+                  <SharedBadge shared={sub.shared}/>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
       {/* ── Dashboard ── */}
-      {page === "dashboard" && (
-        <DashboardPage
-          data={data}
-          grandMonthly={grandMonthly}
-          catMonthly={catMonthly}
-          dashCat={dashCat}
-          dashSub={dashSub}
-          onGoToSub={(catId, subId) => { setActiveCatId(catId); setActiveSubId(subId); setPage("contracts"); setTimeout(()=>{ const cat = data.categories.find(c=>c.id===catId); const sub = cat?.subs.find(s=>s.id===subId); if(sub) { setSubModal({mode:"view",catId,subId}); }}, 50); }}
-          onGoToSubscription={() => setPage("subscriptions")}
-          fmt={fmt}
-          subMonthlyFn={subMonthly}
-          monthlyFromInvoicesFn={monthlyFromInvoices}
-          ACCENT={ACCENT} SURFACE={SURFACE} BORDER={BORDER} MUTED={MUTED} CHART_COLORS={CHART_COLORS}
-        />
+      {page==="dashboard" && (
+        <div className="pg" style={{padding:"32px 40px"}}>
+          <div className="dash-cards" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12,marginBottom:32}}>
+            {[["mensal","Total mensal",fmt(grandMonthly)],["anual","Total anual",fmt(grandMonthly*12)],["categorias","Categorias",categories.length],["subscricoes","Subscrições",subscriptions.length]].map(([id,label,val])=>(
+              <div key={id} onClick={()=>setDrilldown(drilldown===id?null:id)}
+                style={{background:drilldown===id?"#1e1e2a":SURFACE,border:`1px solid ${drilldown===id?"#4a4a6a":BORDER}`,borderRadius:10,padding:"16px 20px",cursor:"pointer"}}>
+                <div style={{fontSize:"0.62rem",color:MUTED,letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:6}}>{label}</div>
+                <div style={{fontFamily:"Fraunces,serif",fontSize:"1.5rem",fontWeight:300,color:ACCENT}}>{val}</div>
+                <div style={{fontSize:"0.62rem",color:drilldown===id?"#7eb8c9":"#444",marginTop:4}}>{drilldown===id?"▲ fechar":"ver detalhe →"}</div>
+              </div>
+            ))}
+          </div>
+
+          {drilldown&&(
+            <div style={{background:"#0d0d11",border:"1px solid #2a2a3e",borderRadius:10,padding:"20px 24px",marginBottom:28}}>
+              <div style={{fontSize:"0.67rem",color:"#7eb8c9",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:16}}>
+                {drilldown==="mensal"?"Contabilizado · mensal":drilldown==="anual"?"Contabilizado · anual":drilldown==="categorias"?"Categorias com gastos":"Subscrições activas"}
+              </div>
+              {drillRows.map((row,i)=>(
+                <div key={i} className="rh" onClick={()=>{
+                  if(row.type==="sub"){setActiveCatId(row.sub.category_id);setActiveSubId(row.sub.id);setPage("contracts");setSubModal({mode:"view",id:row.sub.id});}
+                  else if(row.type==="subscricao"){setPage("subscriptions");}
+                  setDrilldown(null);
+                }} style={{display:"flex",alignItems:"center",gap:14,padding:"9px 12px",borderRadius:7,background:SURFACE,cursor:"pointer",marginBottom:4}}>
+                  <div style={{flex:1}}>
+                    <div style={{fontSize:"0.82rem",color:"#d0ccc4"}}>{row.label}</div>
+                    <div style={{fontSize:"0.67rem",color:"#555",marginTop:2}}>{row.sublabel}</div>
+                  </div>
+                  <div style={{fontFamily:"Fraunces,serif",fontSize:"1rem",fontWeight:300,color:ACCENT}}>{fmt(row.value)}</div>
+                  <div style={{fontSize:"0.7rem",color:"#444"}}>→</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {dashCat.length===0?<div style={{color:"#444",textAlign:"center",padding:60,fontSize:"0.85rem"}}>Adiciona faturas para ver o dashboard.</div>:(
+            <>
+              <div className="dash-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:20,marginBottom:20}}>
+                {[["Por categoria · mensal","mensal"],["Por categoria · anual","anual"]].map(([title,key])=>(
+                  <div key={key} style={{background:SURFACE,border:`1px solid ${BORDER}`,borderRadius:10,padding:"20px 24px"}}>
+                    <div style={{fontSize:"0.67rem",color:MUTED,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:14}}>{title}</div>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <PieChart><Pie data={dashCat} dataKey={key} nameKey="name" cx="50%" cy="50%" outerRadius={85} label={({name,percent})=>`${name} ${(percent*100).toFixed(0)}%`} labelLine={false}>
+                        {dashCat.map((e,i)=><Cell key={i} fill={e.fill}/>)}
+                      </Pie><Tooltip formatter={v=>fmt(v)} contentStyle={{background:"#131317",border:`1px solid ${BORDER}`,borderRadius:6,fontSize:"0.76rem"}}/></PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                ))}
+              </div>
+              <div style={{background:SURFACE,border:`1px solid ${BORDER}`,borderRadius:10,padding:"20px 24px",marginBottom:20}}>
+                <div style={{fontSize:"0.67rem",color:MUTED,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:14}}>Categorias · mensal vs anual</div>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={dashCat}><XAxis dataKey="name" tick={{fill:"#666",fontSize:11}} axisLine={false} tickLine={false}/><YAxis tick={{fill:"#555",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>fmt(v)} width={85}/><Tooltip formatter={v=>fmt(v)} contentStyle={{background:"#131317",border:`1px solid ${BORDER}`,borderRadius:6,fontSize:"0.76rem"}}/><Bar dataKey="mensal" name="Mensal" fill={ACCENT} radius={[4,4,0,0]}/><Bar dataKey="anual" name="Anual" fill="#7eb8c9" radius={[4,4,0,0]}/></BarChart>
+                </ResponsiveContainer>
+              </div>
+              {dashSub.length>0&&(
+                <div style={{background:SURFACE,border:`1px solid ${BORDER}`,borderRadius:10,padding:"20px 24px"}}>
+                  <div style={{fontSize:"0.67rem",color:MUTED,letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:14}}>Subcategorias · média mensal</div>
+                  <ResponsiveContainer width="100%" height={240}>
+                    <BarChart data={dashSub}><XAxis dataKey="name" tick={{fill:"#666",fontSize:10}} axisLine={false} tickLine={false}/><YAxis tick={{fill:"#555",fontSize:10}} axisLine={false} tickLine={false} tickFormatter={v=>fmt(v)} width={85}/><Tooltip formatter={v=>fmt(v)} labelFormatter={(l,p)=>p?.[0]?`${p[0].payload.cat} › ${l}`:l} contentStyle={{background:"#131317",border:`1px solid ${BORDER}`,borderRadius:6,fontSize:"0.76rem"}}/><Bar dataKey="mensal" name="Média mensal" radius={[4,4,0,0]}>{dashSub.map((e,i)=><Cell key={i} fill={e.fill}/>)}</Bar></BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       )}
 
       {/* ── Companies ── */}
-      {page === "companies" && (
-        <div className="bottom-pad page-content" style={{ padding:"32px 40px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
-            <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.35rem", fontWeight:300 }}>Empresas</div>
-            <Btn onClick={() => { setCoF(emptyCo); setCoModal({ mode:"new" }); }} v="primary">+ nova empresa</Btn>
+      {page==="companies"&&(
+        <div className="pg" style={{padding:"32px 40px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+            <div style={{fontFamily:"Fraunces,serif",fontSize:"1.35rem",fontWeight:300}}>Empresas</div>
+            <Btn onClick={()=>{setCoF(emptyCo);setCoModal({mode:"new"});}} v="primary">+ nova empresa</Btn>
           </div>
-          <div className="card-grid" style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:12 }}>
-            {data.companies.map(co => {
-              const count = data.categories.reduce((s,cat) => s + cat.subs.filter(sub=>sub.companyId===co.id).length, 0);
-              return (
-                <div key={co.id} onClick={() => { setCoF({name:co.name,nif:co.nif||"",contact:co.contact||"",website:co.website||"",notes:co.notes||""}); setCoModal({mode:"edit",id:co.id}); }}
-                  style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"16px 18px", cursor:"pointer", transition:"border-color .15s" }}
-                  onMouseEnter={e=>e.currentTarget.style.borderColor="#3a3a3e"}
-                  onMouseLeave={e=>e.currentTarget.style.borderColor=BORDER}>
-                  <div style={{ fontFamily:"Fraunces,serif", fontSize:"1rem", fontWeight:300, marginBottom:6 }}>{co.name}</div>
-                  {co.nif && <div style={{ fontSize:"0.7rem", color:"#666", marginBottom:3 }}>NIF {co.nif}</div>}
-                  {co.contact && <div style={{ fontSize:"0.7rem", color:"#666", marginBottom:3 }}>{co.contact}</div>}
-                  {co.website && <div style={{ fontSize:"0.7rem", color:"#555", marginBottom:8 }}>{co.website}</div>}
-                  <div style={{ fontSize:"0.65rem", color:"#444", marginTop:6 }}>{count} subcategor{count===1?"ia":"ias"}</div>
-                </div>
-              );
-            })}
-            {data.companies.length === 0 && <div style={{ color:"#444", fontSize:"0.82rem" }}>Nenhuma empresa criada ainda.</div>}
+          <div className="card-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))",gap:12}}>
+            {companies.map(co=>(
+              <div key={co.id} onClick={()=>{setCoF({name:co.name,nif:co.nif||"",contact:co.contact||"",website:co.website||"",notes:co.notes||"",shared:co.shared||true});setCoModal({mode:"edit",id:co.id});}}
+                style={{background:SURFACE,border:`1px solid ${BORDER}`,borderRadius:10,padding:"16px 18px",cursor:"pointer"}}
+                onMouseEnter={e=>e.currentTarget.style.borderColor="#3a3a3e"} onMouseLeave={e=>e.currentTarget.style.borderColor=BORDER}>
+                <div style={{fontFamily:"Fraunces,serif",fontSize:"1rem",fontWeight:300,marginBottom:6}}>{co.name}</div>
+                {co.nif&&<div style={{fontSize:"0.7rem",color:"#666",marginBottom:3}}>NIF {co.nif}</div>}
+                {co.contact&&<div style={{fontSize:"0.7rem",color:"#666",marginBottom:3}}>{co.contact}</div>}
+                {co.website&&<div style={{fontSize:"0.7rem",color:"#555",marginBottom:6}}>{co.website}</div>}
+                <SharedBadge shared={co.shared}/>
+              </div>
+            ))}
           </div>
         </div>
       )}
 
-      {/* ── Categories settings ── */}
-      {page === "settings" && (
-        <div className="bottom-pad page-content" style={{ padding:"32px 40px", maxWidth:680 }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
-            <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.35rem", fontWeight:300 }}>Categorias</div>
-            <Btn onClick={() => { setCatF({name:"",icon:""}); setCatModal({mode:"new"}); }} v="primary">+ nova categoria</Btn>
+      {/* ── Settings ── */}
+      {page==="settings"&&(
+        <div className="pg" style={{padding:"32px 40px",maxWidth:680}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
+            <div style={{fontFamily:"Fraunces,serif",fontSize:"1.35rem",fontWeight:300}}>Categorias</div>
+            <Btn onClick={()=>{setCatF({name:"",icon:"",shared:false});setCatModal({mode:"new"});}} v="primary">+ nova</Btn>
           </div>
-          {data.categories.map(cat => (
-            <div key={cat.id} style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:10, padding:"16px 20px", marginBottom:12 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.05rem", fontWeight:300 }}>{cat.icon} {cat.name}</div>
-                <div style={{ display:"flex", gap:8 }}>
-                  <Btn onClick={() => { setCatF({name:cat.name,icon:cat.icon}); setCatModal({mode:"edit",catId:cat.id}); }} v="subtle" s={{fontSize:"0.72rem",padding:"5px 12px"}}>editar</Btn>
-                  <Btn onClick={() => openNewSub(cat.id)} v="primary" s={{fontSize:"0.72rem",padding:"5px 12px"}}>+ subcategoria</Btn>
+          {categories.map(cat=>(
+            <div key={cat.id} style={{background:SURFACE,border:`1px solid ${BORDER}`,borderRadius:10,padding:"16px 20px",marginBottom:12}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
+                  <span style={{fontFamily:"Fraunces,serif",fontSize:"1.05rem",fontWeight:300}}>{cat.icon} {cat.name}</span>
+                  <SharedBadge shared={cat.shared}/>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <Btn onClick={()=>{setCatF({name:cat.name,icon:cat.icon,shared:cat.shared});setCatModal({mode:"edit",id:cat.id});}} v="subtle" s={{fontSize:"0.72rem",padding:"5px 12px"}}>editar</Btn>
+                  <Btn onClick={()=>openNewSub(cat.id)} v="primary" s={{fontSize:"0.72rem",padding:"5px 12px"}}>+ sub</Btn>
                 </div>
               </div>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
-                {cat.subs.map(sub => (
-                  <div key={sub.id} style={{ display:"flex", alignItems:"center", gap:6, background:"#0d0d0f", border:`1px solid ${BORDER}`, borderRadius:6, padding:"4px 10px", fontSize:"0.73rem", color:"#888" }}>
+              <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+                {subsForCat(cat.id).map(sub=>(
+                  <div key={sub.id} style={{display:"flex",alignItems:"center",gap:6,background:"#0d0d0f",border:`1px solid ${BORDER}`,borderRadius:6,padding:"4px 10px",fontSize:"0.73rem",color:"#888"}}>
                     {sub.name}
-                    <button onClick={() => openEditSub(cat.id, sub)} style={{ background:"transparent", border:"none", color:"#555", fontSize:"0.68rem" }}>✎</button>
-                    <button onClick={() => deleteSub(cat.id, sub.id)} style={{ background:"transparent", border:"none", color:"#553333", fontSize:"0.8rem" }}>×</button>
+                    <button onClick={()=>openEditSub(sub)} style={{background:"transparent",border:"none",color:"#555",fontSize:"0.68rem"}}>✎</button>
+                    <button onClick={()=>ask("Eliminar subcategoria?",()=>deleteSub(sub.id))} style={{background:"transparent",border:"none",color:"#553333",fontSize:"0.8rem"}}>×</button>
                   </div>
                 ))}
-                {cat.subs.length === 0 && <span style={{ fontSize:"0.72rem", color:"#333" }}>Sem subcategorias</span>}
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* ── Sub view modal (faturas) ── */}
-      {subModal?.mode === "view" && viewSub && (
-        <Overlay onClose={() => { setSubModal(null); }} wide>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:20 }}>
+      {/* ── Sub view modal ── */}
+      {subModal?.mode==="view"&&viewSub&&(
+        <Overlay onClose={()=>setSubModal(null)} wide>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:20}}>
             <div>
-              <div style={{ fontFamily:"Fraunces,serif", fontSize:"1.3rem", fontWeight:300 }}>{viewSub.name}</div>
-              <div style={{ fontSize:"0.7rem", color:"#666", marginTop:3 }}>{viewCo?.name || "Sem empresa"}</div>
+              <div style={{fontFamily:"Fraunces,serif",fontSize:"1.3rem",fontWeight:300}}>{viewSub.name}</div>
+              <div style={{fontSize:"0.7rem",color:"#666",marginTop:3,display:"flex",gap:6,alignItems:"center"}}>
+                {viewCo?.name||"Sem empresa"} <SharedBadge shared={viewSub.shared}/>
+              </div>
             </div>
-            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-              <RenewalBadge date={viewSub.renewalDate} />
-              {viewSub.fixedValue && <span style={{ fontSize:"0.65rem", padding:"2px 8px", borderRadius:20, background:"#1a2030", color:"#7eb8c9", border:"1px solid #7eb8c933" }}>valor fixo</span>}
-              <Btn onClick={() => openEditSub(subModal.catId, viewSub)} v="subtle" s={{fontSize:"0.72rem",padding:"5px 12px"}}>editar contrato</Btn>
+            <div style={{display:"flex",gap:8,alignItems:"center"}}>
+              <RenewalBadge date={viewSub.renewal_date}/>
+              <Btn onClick={()=>openEditSub(viewSub)} v="subtle" s={{fontSize:"0.72rem",padding:"5px 12px"}}>editar</Btn>
             </div>
           </div>
-
-          {/* Contract info */}
-          <div className="info-grid" style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:10, marginBottom:20 }}>
-            <InfoChip label="Nº Contrato" value={viewSub.contractRef} />
-            <InfoChip label="Adesão" value={viewSub.joinDate} />
-            <InfoChip label="Renovação" value={viewSub.renewalDate} />
-            <InfoChip label={viewSub.fixedValue ? "Valor fixo" : "Periodicidade"} value={viewSub.fixedValue ? `${fmt(viewSub.fixedAmount)} / ${viewSub.period.toLowerCase()}` : viewSub.period} />
+          <div className="info-grid" style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:10,marginBottom:20}}>
+            <InfoChip label="Nº Contrato" value={viewSub.contract_ref}/>
+            <InfoChip label="Adesão" value={viewSub.join_date}/>
+            <InfoChip label="Renovação" value={viewSub.renewal_date}/>
+            <InfoChip label="Periodicidade" value={viewSub.period}/>
           </div>
-          {viewSub.notes && <div style={{ background:"#0d0d0f", borderRadius:7, padding:"10px 14px", marginBottom:20, fontSize:"0.78rem", color:"#888", lineHeight:1.6 }}>{viewSub.notes}</div>}
+          {viewSub.fixed_value&&(
+            <div style={{background:"#0d0d0f",borderRadius:7,padding:"10px 14px",marginBottom:14,fontSize:"0.78rem",color:ACCENT,display:"flex",gap:12,alignItems:"center"}}>
+              <span>valor fixo</span>
+              <span style={{color:"#e8e4dc"}}>{fmt(viewSub.fixed_amount)} / {viewSub.fixed_period?.toLowerCase()}</span>
+              <span style={{color:"#555"}}>dia {viewSub.fixed_day}{viewSub.fixed_period==="Anual"&&viewSub.fixed_month?` de ${["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][parseInt(viewSub.fixed_month)-1]}`:""}</span>
+            </div>
+          )}
+          {viewSub.notes&&<div style={{background:"#0d0d0f",borderRadius:7,padding:"10px 14px",marginBottom:20,fontSize:"0.78rem",color:"#888",lineHeight:1.6}}>{viewSub.notes}</div>}
 
-          {/* Invoices summary */}
-          {viewSub.invoices.length > 0 && (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:10, marginBottom:20 }}>
-              <InfoChip label="Média mensal" value={fmt(monthlyFromInvoices(viewSub.invoices))} />
-              <InfoChip label="Total faturas" value={fmt(annualFromInvoices(viewSub.invoices))} />
-              <InfoChip label="Nº faturas" value={viewSub.invoices.length} />
+          {invForSub(viewSub.id).length>0&&(
+            <div className="info-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10,marginBottom:20}}>
+              <InfoChip label="Média mensal" value={fmt(monthlyFromInvoices(invForSub(viewSub.id)))}/>
+              <InfoChip label="Total faturas" value={fmt(annualFromInvoices(invForSub(viewSub.id)))}/>
+              <InfoChip label="Nº faturas" value={invForSub(viewSub.id).length}/>
             </div>
           )}
 
           {/* Faturas */}
-          <div style={{ borderTop:`1px solid ${BORDER}`, paddingTop:18 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ fontSize:"0.67rem", color:MUTED, letterSpacing:"0.08em", textTransform:"uppercase" }}>Faturas</div>
-              <Btn onClick={() => openAddInvoice(subModal.catId, viewSub.id)} v="primary" s={{fontSize:"0.72rem",padding:"5px 14px"}}>+ nova fatura</Btn>
+          <div style={{borderTop:`1px solid ${BORDER}`,paddingTop:18}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontSize:"0.67rem",color:MUTED,letterSpacing:"0.08em",textTransform:"uppercase"}}>Faturas</div>
+              <Btn onClick={()=>openAddInv(viewSub.id)} v="primary" s={{fontSize:"0.72rem",padding:"5px 14px"}}>+ nova fatura</Btn>
             </div>
-
-            {viewSub.invoices.length === 0 ? (
-              <div style={{ fontSize:"0.78rem", color:"#333", textAlign:"center", padding:"30px 0" }}>Sem faturas ainda.</div>
-            ) : (
-              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                {viewSub.invoices.map(inv => (
-                  <div key={inv.id} onClick={() => openEditInvoice(subModal.catId, viewSub.id, inv)}
-                    className="rh" style={{ background:"#0d0d0f", borderRadius:7, padding:"10px 14px", display:"flex", alignItems:"center", gap:14, cursor:"pointer" }}>
-                    <div style={{ fontSize:"0.68rem", color:MUTED, minWidth:160 }}>
-                      {inv.dateFrom}{inv.dateTo && inv.dateTo !== inv.dateFrom ? ` → ${inv.dateTo}` : ""}
-                    </div>
-                    <div style={{ fontSize:"0.78rem", color:"#999", flex:1 }}>{inv.notes || "—"}</div>
-                    {inv.auto && <span style={{ fontSize:"0.62rem", padding:"1px 6px", borderRadius:10, background:"#1a2030", color:"#7eb8c9", border:"1px solid #7eb8c922", flexShrink:0 }}>auto</span>}
-                    <div style={{ fontSize:"0.85rem", color:ACCENT, fontFamily:"Fraunces,serif", fontWeight:300 }}>{fmt(inv.amount)}</div>
-                    {inv.file && <a href={inv.file} download={inv.fileName} onClick={e=>e.stopPropagation()} style={{ fontSize:"0.75rem", color:"#666", textDecoration:"none" }} title={inv.fileName}>📎</a>}
+            {invForSub(viewSub.id).length===0?<div style={{fontSize:"0.78rem",color:"#333",textAlign:"center",padding:"20px 0"}}>Sem faturas ainda.</div>:(
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {invForSub(viewSub.id).sort((a,b)=>(b.date_from||"").localeCompare(a.date_from||"")).map(inv=>(
+                  <div key={inv.id} onClick={()=>openEditInv(inv)} className="rh"
+                    style={{background:"#0d0d0f",borderRadius:7,padding:"10px 14px",display:"flex",alignItems:"center",gap:14,cursor:"pointer"}}>
+                    <div style={{fontSize:"0.68rem",color:MUTED,minWidth:160}}>{inv.date_from}{inv.date_to&&inv.date_to!==inv.date_from?` → ${inv.date_to}`:""}</div>
+                    <div style={{fontSize:"0.78rem",color:"#999",flex:1}}>{inv.notes||"—"}</div>
+                    {inv.auto&&<span style={{fontSize:"0.62rem",padding:"1px 6px",borderRadius:10,background:"#1a2030",color:"#7eb8c9",border:"1px solid #7eb8c922"}}>auto</span>}
+                    <div style={{fontFamily:"Fraunces,serif",fontSize:"0.85rem",fontWeight:300,color:ACCENT}}>{fmt(inv.amount)}</div>
+                    {inv.file_data&&<a href={inv.file_data} download={inv.file_name} onClick={e=>e.stopPropagation()} style={{fontSize:"0.72rem",color:"#666",textDecoration:"none"}} title={inv.file_name}>📎</a>}
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Documentos do contrato */}
-          <div style={{ borderTop:`1px solid ${BORDER}`, paddingTop:18, marginTop:18 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-              <div style={{ fontSize:"0.67rem", color:MUTED, letterSpacing:"0.08em", textTransform:"uppercase" }}>Documentos do contrato</div>
-              <Btn onClick={() => openAddDoc(subModal.catId, viewSub.id)} v="subtle" s={{fontSize:"0.72rem",padding:"5px 14px"}}>+ documento</Btn>
+          {/* Documentos */}
+          <div style={{borderTop:`1px solid ${BORDER}`,paddingTop:18,marginTop:18}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontSize:"0.67rem",color:MUTED,letterSpacing:"0.08em",textTransform:"uppercase"}}>Documentos do contrato</div>
+              <Btn onClick={()=>openAddDoc(viewSub.id)} v="subtle" s={{fontSize:"0.72rem",padding:"5px 14px"}}>+ documento</Btn>
             </div>
-            {(viewSub.contractDocs||[]).length === 0 ? (
-              <div style={{ fontSize:"0.78rem", color:"#333", textAlign:"center", padding:"20px 0" }}>Sem documentos ainda.</div>
-            ) : (
-              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                {(viewSub.contractDocs||[]).map(doc => (
-                  <div key={doc.id} onClick={() => openEditDoc(subModal.catId, viewSub.id, doc)}
-                    className="rh" style={{ background:"#0d0d0f", borderRadius:7, padding:"10px 14px", display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}>
-                    <div style={{ fontSize:"0.85rem" }}>📄</div>
-                    <div style={{ fontSize:"0.8rem", color:"#bbb", flex:1 }}>{doc.name || doc.fileName || "—"}</div>
-                    {doc.notes && <div style={{ fontSize:"0.7rem", color:"#555", maxWidth:160, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{doc.notes}</div>}
-                    {doc.file && <a href={doc.file} download={doc.fileName} onClick={e=>e.stopPropagation()} style={{ fontSize:"0.72rem", color:ACCENT, textDecoration:"none" }} title={doc.fileName}>↓ ver</a>}
+            {docsForSub(viewSub.id).length===0?<div style={{fontSize:"0.78rem",color:"#333",textAlign:"center",padding:"20px 0"}}>Sem documentos ainda.</div>:(
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {docsForSub(viewSub.id).map(doc=>(
+                  <div key={doc.id} onClick={()=>openEditDoc(doc)} className="rh"
+                    style={{background:"#0d0d0f",borderRadius:7,padding:"10px 14px",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}}>
+                    <div style={{fontSize:"0.85rem"}}>📄</div>
+                    <div style={{fontSize:"0.8rem",color:"#bbb",flex:1}}>{doc.name||doc.file_name||"—"}</div>
+                    {doc.notes&&<div style={{fontSize:"0.7rem",color:"#555",maxWidth:160,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{doc.notes}</div>}
+                    {doc.file_data&&<a href={doc.file_data} download={doc.file_name} onClick={e=>e.stopPropagation()} style={{fontSize:"0.72rem",color:ACCENT,textDecoration:"none"}}>↓ ver</a>}
                   </div>
                 ))}
               </div>
             )}
           </div>
-
-          <div style={{ textAlign:"right", marginTop:20 }}>
-            <Btn onClick={() => setSubModal(null)}>Fechar</Btn>
-          </div>
+          <div style={{textAlign:"right",marginTop:20}}><Btn onClick={()=>setSubModal(null)}>Fechar</Btn></div>
         </Overlay>
       )}
 
       {/* ── Sub new/edit modal ── */}
-      {(subModal?.mode === "new" || subModal?.mode === "edit") && (
-        <Overlay onClose={() => setSubModal(null)}>
-          <MTitle>{subModal.mode==="new" ? "Nova subcategoria" : "Editar subcategoria"}</MTitle>
-          <div className="form-grid" style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+      {(subModal?.mode==="new"||subModal?.mode==="edit")&&(
+        <Overlay onClose={()=>setSubModal(null)}>
+          <MTitle>{subModal.mode==="new"?"Nova subcategoria":"Editar subcategoria"}</MTitle>
+          <div className="fgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <F label="Nome *"><input value={sf.name} onChange={e=>setSf(f=>({...f,name:e.target.value}))}/></F>
             <F label="Empresa" half>
-              <select value={sf.companyId} onChange={e=>setSf(f=>({...f,companyId:e.target.value}))}>
+              <select value={sf.company_id} onChange={e=>setSf(f=>({...f,company_id:e.target.value}))}>
                 <option value="">—</option>
-                {data.companies.map(co=><option key={co.id} value={co.id}>{co.name}</option>)}
+                {companies.map(co=><option key={co.id} value={co.id}>{co.name}</option>)}
               </select>
             </F>
-            <F label="Nº Contrato / Referência" half>
-              <input value={sf.contractRef} onChange={e=>setSf(f=>({...f,contractRef:e.target.value}))} />
-            </F>
-            <F label="Data de adesão" half>
-              <input type="date" value={sf.joinDate} onChange={e=>setSf(f=>({...f,joinDate:e.target.value}))} />
-            </F>
-            <F label="Data de renovação (opcional)" half>
-              <input type="date" value={sf.renewalDate} onChange={e=>setSf(f=>({...f,renewalDate:e.target.value}))} />
-            </F>
+            <F label="Nº Contrato" half><input value={sf.contract_ref} onChange={e=>setSf(f=>({...f,contract_ref:e.target.value}))}/></F>
+            <F label="Data adesão" half><input type="date" value={sf.join_date} onChange={e=>setSf(f=>({...f,join_date:e.target.value}))}/></F>
+            <F label="Data renovação" half><input type="date" value={sf.renewal_date} onChange={e=>setSf(f=>({...f,renewal_date:e.target.value}))}/></F>
             <F label="Periodicidade" half>
               <select value={sf.period} onChange={e=>setSf(f=>({...f,period:e.target.value}))}>
                 {PERIODS.map(p=><option key={p}>{p}</option>)}
               </select>
             </F>
-            <F label="Notas">
-              <textarea value={sf.notes} onChange={e=>setSf(f=>({...f,notes:e.target.value}))} rows={3} style={{ resize:"vertical" }} />
+            <F label="Visibilidade" half>
+              <select value={sf.shared?"shared":"private"} onChange={e=>setSf(f=>({...f,shared:e.target.value==="shared"}))}>
+                <option value="private">Privada</option>
+                <option value="shared">Partilhada</option>
+              </select>
             </F>
+            <F label="Notas"><textarea value={sf.notes} onChange={e=>setSf(f=>({...f,notes:e.target.value}))} rows={2} style={{resize:"vertical"}}/></F>
           </div>
 
-          {/* Fixed / variable toggle */}
-          <div style={{ borderTop:`1px solid ${BORDER}`, marginTop:4, paddingTop:18 }}>
-            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom: sf.fixedValue ? 14 : 0 }}>
-              <div>
-                <div style={{ fontSize:"0.8rem", color:"#ccc" }}>Valor fixo</div>
-                <div style={{ fontSize:"0.68rem", color:MUTED, marginTop:2 }}>Gera faturas automaticamente com valor constante</div>
-              </div>
-              {/* Toggle switch */}
-              <div onClick={() => setSf(f=>({...f, fixedValue:!f.fixedValue}))}
-                style={{ width:44, height:24, borderRadius:12, background: sf.fixedValue ? ACCENT : "#2a2a2e", cursor:"pointer", position:"relative", transition:"background .2s", flexShrink:0 }}>
-                <div style={{ position:"absolute", top:3, left: sf.fixedValue ? 23 : 3, width:18, height:18, borderRadius:"50%", background: sf.fixedValue ? BG : "#555", transition:"left .2s" }} />
-              </div>
+          {/* Fixed value toggle */}
+          <div style={{borderTop:`1px solid ${BORDER}`,paddingTop:14,marginTop:4}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:sf.fixed_value?14:0}}>
+              <div style={{fontSize:"0.72rem",color:"#888"}}>Valor fixo (gera faturas automaticamente)</div>
+              <button onClick={()=>setSf(f=>({...f,fixed_value:!f.fixed_value}))}
+                style={{background:sf.fixed_value?ACCENT:"#1e1e24",border:"none",borderRadius:20,width:40,height:22,position:"relative",transition:"background .2s"}}>
+                <span style={{position:"absolute",top:2,left:sf.fixed_value?20:2,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left .2s"}}/>
+              </button>
             </div>
-            {sf.fixedValue && (
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginTop:4 }}>
-                <F label="Valor fixo (€)" half>
-                  <input type="number" step="0.01" placeholder="0.00" value={sf.fixedAmount} onChange={e=>setSf(f=>({...f,fixedAmount:e.target.value}))} />
-                </F>
-                <F label="Periodicidade da fatura" half>
-                  <select value={sf.fixedPeriod} onChange={e=>setSf(f=>({...f,fixedPeriod:e.target.value}))}>
-                    <option>Mensal</option>
-                    <option>Anual</option>
+            {sf.fixed_value&&(
+              <div className="fgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+                <F label="Valor (€)" half><input type="number" step="0.01" value={sf.fixed_amount} onChange={e=>setSf(f=>({...f,fixed_amount:e.target.value}))}/></F>
+                <F label="Periodicidade pagamento" half>
+                  <select value={sf.fixed_period} onChange={e=>setSf(f=>({...f,fixed_period:e.target.value,fixed_month:""}))}>
+                    <option>Mensal</option><option>Anual</option>
                   </select>
                 </F>
-                <F label="Dia de geração (1–28)" half>
-                  <input type="number" min="1" max="28" value={sf.fixedDay} onChange={e=>setSf(f=>({...f,fixedDay:parseInt(e.target.value)||1}))} />
-                </F>
-                {sf.fixedPeriod === "Anual" && (
-                  <F label="Mês de geração" half>
-                    <select value={sf.fixedMonth||""} onChange={e=>setSf(f=>({...f,fixedMonth:e.target.value}))}>
+                <F label="Dia de geração" half><input type="number" min="1" max="28" value={sf.fixed_day} onChange={e=>setSf(f=>({...f,fixed_day:e.target.value}))}/></F>
+                {sf.fixed_period==="Anual"&&(
+                  <F label="Mês" half>
+                    <select value={sf.fixed_month} onChange={e=>setSf(f=>({...f,fixed_month:e.target.value}))}>
                       <option value="">—</option>
-                      {["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"].map((m,i)=>(
-                        <option key={i+1} value={i+1}>{m}</option>
-                      ))}
+                      {["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"].map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}
                     </select>
                   </F>
                 )}
               </div>
             )}
           </div>
-          <div style={{ display:"flex", justifyContent:"space-between", marginTop:22 }}>
-            {subModal.mode==="edit" ? <Btn onClick={()=>deleteSub(subModal.catId,subModal.subId)} v="danger">Eliminar</Btn> : <div/>}
-            <div style={{ display:"flex", gap:8 }}>
+
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:22}}>
+            {subModal.mode==="edit"?<Btn onClick={()=>ask("Eliminar subcategoria?",()=>deleteSub(subModal.id))} v="danger">Eliminar</Btn>:<div/>}
+            <div style={{display:"flex",gap:8}}>
               <Btn onClick={()=>setSubModal(null)}>Cancelar</Btn>
               <Btn onClick={saveSub} v="primary">Guardar</Btn>
             </div>
@@ -1227,199 +1014,156 @@ function App() {
       )}
 
       {/* ── Invoice modal ── */}
-      {invModal && (
-        <Overlay onClose={() => setInvModal(null)}>
-          <MTitle>{invModal.mode==="new" ? "Nova fatura" : "Editar fatura"}</MTitle>
-          {invModalSub && <div style={{ fontSize:"0.72rem", color:MUTED, marginBottom:18 }}>{invModalSub.name}</div>}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-            <F label="Data início" half>
-              <input type="date" value={invF.dateFrom} onChange={e=>setInvF(f=>({...f,dateFrom:e.target.value}))} />
-            </F>
-            <F label="Data fim" half>
-              <input type="date" value={invF.dateTo} onChange={e=>setInvF(f=>({...f,dateTo:e.target.value}))} />
-            </F>
-            <F label="Valor (€) *">
-              <input type="number" step="0.01" placeholder="0.00" value={invF.amount} onChange={e=>setInvF(f=>({...f,amount:e.target.value}))} />
-            </F>
-            <F label="Notas">
-              <input value={invF.notes} onChange={e=>setInvF(f=>({...f,notes:e.target.value}))} placeholder="ex: Fatura Março 2025" />
-            </F>
+      {invModal&&(
+        <Overlay onClose={()=>setInvModal(null)}>
+          <MTitle>{invModal.mode==="new"?"Nova fatura":"Editar fatura"}</MTitle>
+          <div className="fgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <F label="Data início" half><input type="date" value={invF.date_from} onChange={e=>setInvF(f=>({...f,date_from:e.target.value}))}/></F>
+            <F label="Data fim" half><input type="date" value={invF.date_to} onChange={e=>setInvF(f=>({...f,date_to:e.target.value}))}/></F>
+            <F label="Valor (€) *"><input type="number" step="0.01" placeholder="0.00" value={invF.amount} onChange={e=>setInvF(f=>({...f,amount:e.target.value}))}/></F>
+            <F label="Notas"><input value={invF.notes} onChange={e=>setInvF(f=>({...f,notes:e.target.value}))} placeholder="ex: Fatura Março 2025"/></F>
           </div>
-
-          {/* PDF */}
-          <div style={{ marginTop:14 }}>
-            <div style={{ fontSize:"0.65rem", color:"#666", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>Documento</div>
-            <input ref={pdfRef} type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display:"none" }} onChange={e=>{
-              const file = e.target.files[0]; if (!file) return;
-              const r = new FileReader(); r.onload = ev => setInvF(f=>({...f,file:ev.target.result,fileName:file.name})); r.readAsDataURL(file);
+          <div style={{marginTop:14}}>
+            <div style={{fontSize:"0.65rem",color:"#666",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>Documento</div>
+            <input ref={pdfRef} type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>{
+              const file=e.target.files[0];if(!file)return;
+              const r=new FileReader();r.onload=ev=>setInvF(f=>({...f,file_data:ev.target.result,file_name:file.name}));r.readAsDataURL(file);
             }}/>
-            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <Btn onClick={() => pdfRef.current.click()} v="subtle" s={{fontSize:"0.75rem"}}>
-                {invF.fileName ? `📎 ${invF.fileName.slice(0,30)}` : "+ PDF / imagem"}
-              </Btn>
-              {invF.file && invF.fileName && (
-                <a href={invF.file} download={invF.fileName} style={{ fontSize:"0.72rem", color:ACCENT, textDecoration:"none" }}>↓ ver</a>
-              )}
-              {invF.file && <button onClick={()=>setInvF(f=>({...f,file:null,fileName:""}))} style={{ background:"transparent", border:"none", color:"#553333", fontSize:"0.8rem" }}>× remover</button>}
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <Btn onClick={()=>pdfRef.current.click()} v="subtle" s={{fontSize:"0.75rem"}}>{invF.file_name?`📎 ${invF.file_name.slice(0,30)}`:"+ PDF / imagem"}</Btn>
+              {invF.file_data&&<a href={invF.file_data} download={invF.file_name} style={{fontSize:"0.72rem",color:ACCENT,textDecoration:"none"}}>↓ ver</a>}
+              {invF.file_data&&<button onClick={()=>setInvF(f=>({...f,file_data:"",file_name:""}))} style={{background:"transparent",border:"none",color:"#553333",fontSize:"0.8rem"}}>× remover</button>}
             </div>
           </div>
-
-          <div style={{ display:"flex", justifyContent:"space-between", marginTop:24 }}>
-            {invModal.mode==="edit" ? <Btn onClick={()=>deleteInvoice(invModal.catId,invModal.subId,invModal.invId)} v="danger">Eliminar</Btn> : <div/>}
-            <div style={{ display:"flex", gap:8 }}>
-              <Btn onClick={()=>setInvModal(null)}>Cancelar</Btn>
-              <Btn onClick={saveInvoice} v="primary">Guardar</Btn>
-            </div>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:24}}>
+            {invModal.mode==="edit"?<Btn onClick={()=>ask("Eliminar fatura?",()=>deleteInv(invModal.id))} v="danger">Eliminar</Btn>:<div/>}
+            <div style={{display:"flex",gap:8}}><Btn onClick={()=>setInvModal(null)}>Cancelar</Btn><Btn onClick={saveInv} v="primary">Guardar</Btn></div>
           </div>
         </Overlay>
       )}
 
-      {/* ── Company modal ── */}
-      {coModal && (
-        <Overlay onClose={() => setCoModal(null)}>
-          <MTitle>{coModal.mode==="new" ? "Nova empresa" : "Editar empresa"}</MTitle>
-          <F label="Nome *"><input value={coF.name} onChange={e=>setCoF(f=>({...f,name:e.target.value}))} /></F>
-          <F label="NIF"><input value={coF.nif} onChange={e=>setCoF(f=>({...f,nif:e.target.value}))} /></F>
-          <F label="Contacto"><input value={coF.contact} onChange={e=>setCoF(f=>({...f,contact:e.target.value}))} placeholder="email ou telefone" /></F>
-          <F label="Website"><input value={coF.website} onChange={e=>setCoF(f=>({...f,website:e.target.value}))} placeholder="https://..." /></F>
-          <F label="Observações"><textarea value={coF.notes} onChange={e=>setCoF(f=>({...f,notes:e.target.value}))} rows={3} style={{ resize:"vertical" }} /></F>
-          <div style={{ display:"flex", justifyContent:"space-between", marginTop:22 }}>
-            {coModal.mode==="edit" ? <Btn onClick={()=>deleteCompany(coModal.id)} v="danger">Eliminar</Btn> : <div/>}
-            <div style={{ display:"flex", gap:8 }}>
-              <Btn onClick={()=>setCoModal(null)}>Cancelar</Btn>
-              <Btn onClick={saveCompany} v="primary">Guardar</Btn>
+      {/* ── Doc modal ── */}
+      {docModal&&(
+        <Overlay onClose={()=>setDocModal(null)}>
+          <MTitle>{docModal.mode==="new"?"Novo documento":"Editar documento"}</MTitle>
+          <F label="Nome / descrição"><input value={docF.name} onChange={e=>setDocF(f=>({...f,name:e.target.value}))} placeholder="ex: Contrato EDP 2024"/></F>
+          <F label="Notas"><textarea value={docF.notes} onChange={e=>setDocF(f=>({...f,notes:e.target.value}))} rows={2} style={{resize:"vertical"}}/></F>
+          <div style={{marginTop:4}}>
+            <div style={{fontSize:"0.65rem",color:"#666",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>Ficheiro</div>
+            <input ref={docFileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>{
+              const file=e.target.files[0];if(!file)return;
+              const r=new FileReader();r.onload=ev=>setDocF(f=>({...f,file_data:ev.target.result,file_name:file.name}));r.readAsDataURL(file);
+            }}/>
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <Btn onClick={()=>docFileRef.current.click()} v="subtle" s={{fontSize:"0.75rem"}}>{docF.file_name?`📄 ${docF.file_name.slice(0,32)}`:"+ PDF / imagem"}</Btn>
+              {docF.file_data&&<a href={docF.file_data} download={docF.file_name} style={{fontSize:"0.72rem",color:ACCENT,textDecoration:"none"}}>↓ ver</a>}
+              {docF.file_data&&<button onClick={()=>setDocF(f=>({...f,file_data:"",file_name:""}))} style={{background:"transparent",border:"none",color:"#553333",fontSize:"0.8rem"}}>× remover</button>}
             </div>
           </div>
-        </Overlay>
-      )}
-
-      {/* ── Category modal ── */}
-      {catModal && (
-        <Overlay onClose={() => setCatModal(null)}>
-          <MTitle>{catModal.mode==="new" ? "Nova categoria" : "Editar categoria"}</MTitle>
-          <F label="Nome *"><input value={catF.name} onChange={e=>setCatF(f=>({...f,name:e.target.value}))} /></F>
-          <F label="Ícone (emoji)"><input value={catF.icon} onChange={e=>setCatF(f=>({...f,icon:e.target.value}))} placeholder="🏠" maxLength={2} /></F>
-          <div style={{ display:"flex", justifyContent:"space-between", marginTop:22 }}>
-            {catModal.mode==="edit" ? <Btn onClick={()=>deleteCat(catModal.catId)} v="danger">Eliminar</Btn> : <div/>}
-            <div style={{ display:"flex", gap:8 }}>
-              <Btn onClick={()=>setCatModal(null)}>Cancelar</Btn>
-              <Btn onClick={saveCat} v="primary">Guardar</Btn>
-            </div>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:24}}>
+            {docModal.mode==="edit"?<Btn onClick={()=>ask("Eliminar documento?",()=>deleteDoc(docModal.id))} v="danger">Eliminar</Btn>:<div/>}
+            <div style={{display:"flex",gap:8}}><Btn onClick={()=>setDocModal(null)}>Cancelar</Btn><Btn onClick={saveDoc} v="primary">Guardar</Btn></div>
           </div>
         </Overlay>
       )}
 
       {/* ── Subscription modal ── */}
-      {subscModal && (
-        <Overlay onClose={() => setSubscModal(null)}>
-          <MTitle>{subscModal.mode==="new" ? "Nova subscrição" : "Editar subscrição"}</MTitle>
-          <F label="Nome *">
-            <input value={subscF.name} onChange={e=>setSubscF(f=>({...f,name:e.target.value}))} placeholder="ex: Lightroom, Netflix, Spotify..." autoFocus />
-          </F>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-            <F label="Valor (€)" half>
-              <input type="number" step="0.01" placeholder="0.00" value={subscF.value} onChange={e=>setSubscF(f=>({...f,value:e.target.value}))} />
-            </F>
+      {subscModal&&(
+        <Overlay onClose={()=>setSubscModal(null)}>
+          <MTitle>{subscModal.mode==="new"?"Nova subscrição":"Editar subscrição"}</MTitle>
+          <F label="Nome *"><input value={subscF.name} onChange={e=>setSubscF(f=>({...f,name:e.target.value}))} autoFocus/></F>
+          <div className="fgrid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12}}>
+            <F label="Valor (€)" half><input type="number" step="0.01" placeholder="0.00" value={subscF.value} onChange={e=>setSubscF(f=>({...f,value:e.target.value}))}/></F>
             <F label="Periodicidade" half>
-              <select value={subscF.period} onChange={e=>setSubscF(f=>({...f,period:e.target.value,renewalDay:"",renewalMonth:""}))}>
-                <option>Mensal</option>
-                <option>Anual</option>
+              <select value={subscF.period} onChange={e=>setSubscF(f=>({...f,period:e.target.value,renewal_day:"",renewal_month:""}))}>
+                <option>Mensal</option><option>Anual</option>
+              </select>
+            </F>
+            {subscF.period==="Mensal"&&<F label="Dia de renovação"><input type="number" min="1" max="31" placeholder="ex: 3" value={subscF.renewal_day} onChange={e=>setSubscF(f=>({...f,renewal_day:e.target.value}))}/></F>}
+            {subscF.period==="Anual"&&<>
+              <F label="Dia" half><input type="number" min="1" max="31" value={subscF.renewal_day} onChange={e=>setSubscF(f=>({...f,renewal_day:e.target.value}))}/></F>
+              <F label="Mês" half>
+                <select value={subscF.renewal_month} onChange={e=>setSubscF(f=>({...f,renewal_month:e.target.value}))}>
+                  <option value="">—</option>
+                  {["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"].map((m,i)=><option key={i+1} value={i+1}>{m}</option>)}
+                </select>
+              </F>
+            </>}
+            <F label="Visibilidade">
+              <select value={subscF.shared?"shared":"private"} onChange={e=>setSubscF(f=>({...f,shared:e.target.value==="shared"}))}>
+                <option value="private">Privada</option>
+                <option value="shared">Partilhada</option>
               </select>
             </F>
           </div>
-
-          {subscF.period === "Mensal" && (
-            <F label="Dia de renovação (cada mês)">
-              <input type="number" min="1" max="31" placeholder="ex: 3" value={subscF.renewalDay} onChange={e=>setSubscF(f=>({...f,renewalDay:e.target.value}))} />
-            </F>
-          )}
-          {subscF.period === "Anual" && (
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-              <F label="Dia de renovação" half>
-                <input type="number" min="1" max="31" placeholder="ex: 3" value={subscF.renewalDay} onChange={e=>setSubscF(f=>({...f,renewalDay:e.target.value}))} />
-              </F>
-              <F label="Mês de renovação" half>
-                <select value={subscF.renewalMonth} onChange={e=>setSubscF(f=>({...f,renewalMonth:e.target.value}))}>
-                  <option value="">—</option>
-                  {["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"].map((m,i)=>(
-                    <option key={i+1} value={i+1}>{m}</option>
-                  ))}
-                </select>
-              </F>
-            </div>
-          )}
-
-          <div style={{ marginTop:4 }}>
-            <div style={{ fontSize:"0.65rem", color:"#666", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>Documento (opcional)</div>
-            <input ref={subscFileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display:"none" }} onChange={e=>{
-              const file = e.target.files[0]; if (!file) return;
-              const r = new FileReader(); r.onload = ev => setSubscF(f=>({...f,file:ev.target.result,fileName:file.name})); r.readAsDataURL(file);
+          <div style={{marginTop:14}}>
+            <div style={{fontSize:"0.65rem",color:"#666",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>Documento (opcional)</div>
+            <input ref={subscFileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" style={{display:"none"}} onChange={e=>{
+              const file=e.target.files[0];if(!file)return;
+              const r=new FileReader();r.onload=ev=>setSubscF(f=>({...f,file_data:ev.target.result,file_name:file.name}));r.readAsDataURL(file);
             }}/>
-            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <Btn onClick={() => subscFileRef.current.click()} v="subtle" s={{fontSize:"0.75rem"}}>
-                {subscF.fileName ? `📄 ${subscF.fileName.slice(0,32)}` : "+ PDF / imagem"}
-              </Btn>
-              {subscF.file && subscF.fileName && (
-                <a href={subscF.file} download={subscF.fileName} style={{ fontSize:"0.72rem", color:ACCENT, textDecoration:"none" }}>↓ ver</a>
-              )}
-              {subscF.file && <button onClick={()=>setSubscF(f=>({...f,file:null,fileName:""}))} style={{ background:"transparent", border:"none", color:"#553333", fontSize:"0.8rem" }}>× remover</button>}
+            <div style={{display:"flex",alignItems:"center",gap:10}}>
+              <Btn onClick={()=>subscFileRef.current.click()} v="subtle" s={{fontSize:"0.75rem"}}>{subscF.file_name?`📄 ${subscF.file_name.slice(0,32)}`:"+ PDF / imagem"}</Btn>
+              {subscF.file_data&&<a href={subscF.file_data} download={subscF.file_name} style={{fontSize:"0.72rem",color:ACCENT,textDecoration:"none"}}>↓ ver</a>}
+              {subscF.file_data&&<button onClick={()=>setSubscF(f=>({...f,file_data:"",file_name:""}))} style={{background:"transparent",border:"none",color:"#553333",fontSize:"0.8rem"}}>× remover</button>}
             </div>
           </div>
-
-          <div style={{ display:"flex", justifyContent:"space-between", marginTop:24 }}>
-            {subscModal.mode==="edit" ? <Btn onClick={()=>deleteSubscription(subscModal.id)} v="danger">Eliminar</Btn> : <div/>}
-            <div style={{ display:"flex", gap:8 }}>
-              <Btn onClick={()=>setSubscModal(null)}>Cancelar</Btn>
-              <Btn onClick={saveSubscription} v="primary">Guardar</Btn>
-            </div>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:24}}>
+            {subscModal.mode==="edit"?<Btn onClick={()=>ask("Eliminar subscrição?",()=>deleteSubsc(subscModal.id))} v="danger">Eliminar</Btn>:<div/>}
+            <div style={{display:"flex",gap:8}}><Btn onClick={()=>setSubscModal(null)}>Cancelar</Btn><Btn onClick={saveSubsc} v="primary">Guardar</Btn></div>
           </div>
         </Overlay>
       )}
 
-      {/* ── Contract doc modal ── */}
-      {docModal && (
-        <Overlay onClose={() => setDocModal(null)}>
-          <MTitle>{docModal.mode==="new" ? "Novo documento" : "Editar documento"}</MTitle>
-          <F label="Nome / descrição">
-            <input value={docF.name} onChange={e=>setDocF(f=>({...f,name:e.target.value}))} placeholder="ex: Contrato EDP 2024, Apólice Seguro..." />
+      {/* ── Category modal ── */}
+      {catModal&&(
+        <Overlay onClose={()=>setCatModal(null)}>
+          <MTitle>{catModal.mode==="new"?"Nova categoria":"Editar categoria"}</MTitle>
+          <F label="Nome *"><input value={catF.name} onChange={e=>setCatF(f=>({...f,name:e.target.value}))}/></F>
+          <F label="Ícone (emoji)"><input value={catF.icon} onChange={e=>setCatF(f=>({...f,icon:e.target.value}))} placeholder="🏠" maxLength={2}/></F>
+          <F label="Visibilidade">
+            <select value={catF.shared?"shared":"private"} onChange={e=>setCatF(f=>({...f,shared:e.target.value==="shared"}))}>
+              <option value="private">Privada</option>
+              <option value="shared">Partilhada</option>
+            </select>
           </F>
-          <F label="Notas">
-            <textarea value={docF.notes} onChange={e=>setDocF(f=>({...f,notes:e.target.value}))} rows={2} style={{ resize:"vertical" }} placeholder="observações opcionais" />
-          </F>
-          <div style={{ marginTop:4 }}>
-            <div style={{ fontSize:"0.65rem", color:"#666", letterSpacing:"0.08em", textTransform:"uppercase", marginBottom:8 }}>Ficheiro</div>
-            <input ref={docFileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display:"none" }} onChange={e=>{
-              const file = e.target.files[0]; if (!file) return;
-              const r = new FileReader(); r.onload = ev => setDocF(f=>({...f,file:ev.target.result,fileName:file.name})); r.readAsDataURL(file);
-            }}/>
-            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <Btn onClick={() => docFileRef.current.click()} v="subtle" s={{fontSize:"0.75rem"}}>
-                {docF.fileName ? `📄 ${docF.fileName.slice(0,32)}` : "+ PDF / imagem"}
-              </Btn>
-              {docF.file && docF.fileName && (
-                <a href={docF.file} download={docF.fileName} style={{ fontSize:"0.72rem", color:ACCENT, textDecoration:"none" }}>↓ ver</a>
-              )}
-              {docF.file && <button onClick={()=>setDocF(f=>({...f,file:null,fileName:""}))} style={{ background:"transparent", border:"none", color:"#553333", fontSize:"0.8rem" }}>× remover</button>}
-            </div>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:22}}>
+            {catModal.mode==="edit"?<Btn onClick={()=>ask("Eliminar categoria e tudo dentro?",()=>deleteCat(catModal.id))} v="danger">Eliminar</Btn>:<div/>}
+            <div style={{display:"flex",gap:8}}><Btn onClick={()=>setCatModal(null)}>Cancelar</Btn><Btn onClick={saveCat} v="primary">Guardar</Btn></div>
           </div>
-          <div style={{ display:"flex", justifyContent:"space-between", marginTop:24 }}>
-            {docModal.mode==="edit" ? <Btn onClick={()=>deleteDoc(docModal.catId,docModal.subId,docModal.docId)} v="danger">Eliminar</Btn> : <div/>}
-            <div style={{ display:"flex", gap:8 }}>
-              <Btn onClick={()=>setDocModal(null)}>Cancelar</Btn>
-              <Btn onClick={saveDoc} v="primary">Guardar</Btn>
-            </div>
+        </Overlay>
+      )}
+
+      {/* ── Company modal ── */}
+      {coModal&&(
+        <Overlay onClose={()=>setCoModal(null)}>
+          <MTitle>{coModal.mode==="new"?"Nova empresa":"Editar empresa"}</MTitle>
+          <F label="Nome *"><input value={coF.name} onChange={e=>setCoF(f=>({...f,name:e.target.value}))}/></F>
+          <F label="NIF"><input value={coF.nif} onChange={e=>setCoF(f=>({...f,nif:e.target.value}))}/></F>
+          <F label="Contacto"><input value={coF.contact} onChange={e=>setCoF(f=>({...f,contact:e.target.value}))} placeholder="email ou telefone"/></F>
+          <F label="Website"><input value={coF.website} onChange={e=>setCoF(f=>({...f,website:e.target.value}))} placeholder="https://..."/></F>
+          <F label="Observações"><textarea value={coF.notes} onChange={e=>setCoF(f=>({...f,notes:e.target.value}))} rows={3} style={{resize:"vertical"}}/></F>
+          <F label="Visibilidade">
+            <select value={coF.shared?"shared":"private"} onChange={e=>setCoF(f=>({...f,shared:e.target.value==="shared"}))}>
+              <option value="shared">Partilhada</option>
+              <option value="private">Privada</option>
+            </select>
+          </F>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:22}}>
+            {coModal.mode==="edit"?<Btn onClick={()=>ask("Eliminar empresa?",()=>deleteCo(coModal.id))} v="danger">Eliminar</Btn>:<div/>}
+            <div style={{display:"flex",gap:8}}><Btn onClick={()=>setCoModal(null)}>Cancelar</Btn><Btn onClick={saveCo} v="primary">Guardar</Btn></div>
           </div>
         </Overlay>
       )}
 
       {/* ── Confirm dialog ── */}
-      {confirmDialog && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", backdropFilter:"blur(6px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:500, padding:16 }}>
-          <div style={{ background:SURFACE, border:`1px solid ${BORDER}`, borderRadius:12, padding:"28px 32px", maxWidth:360, width:"100%", textAlign:"center" }}>
-            <div style={{ fontSize:"0.9rem", color:"#c8c4bc", marginBottom:24, lineHeight:1.6 }}>{confirmDialog.message}</div>
-            <div style={{ display:"flex", gap:10, justifyContent:"center" }}>
-              <Btn onClick={() => setConfirmDialog(null)}>Cancelar</Btn>
-              <Btn v="danger" onClick={() => { confirmDialog.onConfirm(); setConfirmDialog(null); }}>Eliminar</Btn>
+      {confirmDialog&&(
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",backdropFilter:"blur(6px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16}}>
+          <div style={{background:SURFACE,border:`1px solid ${BORDER}`,borderRadius:12,padding:"28px 32px",maxWidth:360,width:"100%",textAlign:"center"}}>
+            <div style={{fontSize:"0.9rem",color:"#c8c4bc",marginBottom:24,lineHeight:1.6}}>{confirmDialog.msg}</div>
+            <div style={{display:"flex",gap:10,justifyContent:"center"}}>
+              <Btn onClick={()=>setConfirmDialog(null)}>Cancelar</Btn>
+              <Btn v="danger" onClick={()=>{confirmDialog.onConfirm();setConfirmDialog(null);}}>Eliminar</Btn>
             </div>
           </div>
         </div>
@@ -1428,27 +1172,13 @@ function App() {
   );
 }
 
-    function boot() {
-      const root = ReactDOM.createRoot(document.getElementById('root'));
-      root.render(<App />);
-    }
-    if (window.GDrive && window.GDrive.ready) {
-      boot();
-    } else {
-      window.GDrive.onReady = boot;
-      setTimeout(() => {
-        if (!window.GDrive.ready) {
-          document.getElementById('gdrive-overlay').style.display = 'none';
-          boot();
-        }
-      }, 4000);
-    }
-  </script>
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
 
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW:', e));
-    }
-  </script>
+<script>
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(e=>console.warn('SW:',e));
+  }
+</script>
 </body>
 </html>
